@@ -1,0 +1,293 @@
+/* Stili per l'interfaccia amministrativa del plugin PNRR Page Cloner */
+
+.pnrr-cloner-container {
+    margin-top: 20px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pnrr-cloner-info {
+    margin-bottom: 20px;
+}
+
+.pnrr-cloner-actions {
+    margin-bottom: 30px;
+}
+
+.progress-bar {
+    height: 20px;
+    background-color: #f0f0f1;
+    border-radius: 10px;
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: #2271b1;
+    transition: width 0.3s ease;
+}
+
+.progress-status {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.results-container {
+    margin-top: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.clone-result {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+}
+
+.clone-result.success {
+    background-color: #f0f9e8;
+    border-left: 4px solid #46b450;
+}
+
+.clone-result.error {
+    background-color: #fef1f1;
+    border-left: 4px solid #d63638;
+}
+
+.clone-result .dashicons {
+    vertical-align: text-top;
+    margin-right: 5px;
+}
+
+.clone-result a {
+    margin-left: 5px;
+}
+
+/* Stili per la sezione di selezione pagina master */
+.pnrr-master-selection {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.master-page-form {
+    margin-bottom: 20px;
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.form-row label {
+    min-width: 200px;
+    font-weight: bold;
+}
+
+.form-row select {
+    flex: 1;
+    min-width: 250px;
+    max-width: 500px;
+}
+
+.master-page-info {
+    margin-top: 20px;
+    background: #f0f6fc;
+    padding: 15px;
+    border-left: 4px solid #2271b1;
+    border-radius: 2px;
+}
+
+.master-page-info h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #2271b1;
+}
+
+#master-page-feedback {
+    margin-top: 10px;
+}
+
+.notice.inline {
+    margin: 5px 0 15px;
+}
+
+hr {
+    margin: 30px 0;
+    border: 0;
+    border-top: 1px solid #ddd;
+}
+
+/* Stili per pulsante di eliminazione */
+.button-danger {
+    background: #d63638 !important;
+    border-color: #b32d2e !important;
+    color: #fff !important;
+}
+
+.button-danger:hover, .button-danger:focus {
+    background: #b32d2e !important;
+    border-color: #9a2424 !important;
+    color: #fff !important;
+}
+
+.button-danger:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.button-danger .dashicons {
+    margin-right: 5px;
+}
+
+.pnrr-deletion-section {
+    margin-bottom: 30px;
+}
+
+/* Stili per il modal di conferma */
+.pnrr-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.pnrr-modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 0;
+    border: 1px solid #e5e5e5;
+    width: 500px;
+    max-width: 90%;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+}
+
+.pnrr-modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e5e5e5;
+    background-color: #fcfcfc;
+    position: relative;
+}
+
+.pnrr-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.5;
+}
+
+.pnrr-modal-close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.pnrr-modal-close:hover {
+    color: #d63638;
+}
+
+.pnrr-modal-body {
+    padding: 20px;
+}
+
+.pnrr-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e5e5e5;
+    text-align: right;
+}
+
+.pnrr-modal-footer button {
+    margin-left: 10px;
+}
+
+/* Stili per i risultati dell'eliminazione */
+.delete-summary {
+    margin-bottom: 20px;
+}
+
+.delete-summary ul {
+    margin-left: 20px;
+    list-style-type: disc;
+}
+
+.delete-errors {
+    background-color: #fef1f1;
+    border-left: 4px solid #d63638;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.delete-errors ul {
+    margin-left: 20px;
+    list-style-type: disc;
+}
+
+/* Stili per la sezione di gestione clone */
+.pnrr-management-section {
+    margin-bottom: 30px;
+}
+
+.management-info {
+    margin-bottom: 15px;
+}
+
+/* Stili per la tabella dei risultati */
+.identify-summary {
+    margin-bottom: 20px;
+}
+
+.identify-summary ul {
+    margin-left: 20px;
+    list-style-type: disc;
+}
+
+.identify-details {
+    margin-top: 20px;
+}
+
+.identify-details table {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.identify-details table tr.success {
+    background-color: #f0f9e8;
+}
+
+.identify-details table tr.error {
+    background-color: #fef1f1;
+}
+
+.identify-details table tr.info {
+    background-color: #f0f6fc;
+}
+
+.identify-details th {
+    text-align: left;
+    padding: 8px;
+}
+
+.identify-details td {
+    padding: 8px;
+    vertical-align: top;
+}
