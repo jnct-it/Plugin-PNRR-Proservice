@@ -143,13 +143,16 @@ class PNRR_Core {
      * Elimina tutte le pagine clone
      * 
      * @param bool $force_delete Se true, elimina permanentemente le pagine
+     * @param bool $update_clone_data Se true, aggiorna i dati dei cloni
+     * @param bool $remove_clone_data Se true, rimuove i record dei cloni eliminati invece di marcarli
      * @return array Risultato dell'operazione con contatore e errori
      */
-    public function delete_all_clones($force_delete = true) {
+    public function delete_all_clones($force_delete = true, $update_clone_data = true, $remove_clone_data = false) {
         $result = array(
             'deleted' => 0,
             'errors' => array(),
             'skipped' => 0,
+            'data_updated' => false
         );
         
         // Query per ottenere tutte le pagine con il meta _pnrr_is_clone
@@ -167,18 +170,21 @@ class PNRR_Core {
         );
         
         $query = new WP_Query($args);
+        $deleted_page_slugs = array();
         
         if ($query->have_posts()) {
             while ($query->have_posts()) {
                 $query->the_post();
                 $post_id = get_the_ID();
                 $post_title = get_the_title();
+                $post_slug = get_post_field('post_name', $post_id);
                 
                 // Esegui l'eliminazione definitiva se richiesto, altrimenti sposta nel cestino
                 $deleted = wp_delete_post($post_id, $force_delete);
                 
                 if ($deleted) {
                     $result['deleted']++;
+                    $deleted_page_slugs[] = $post_slug;
                     
                     // Log dell'operazione
                     $this->log_action('delete', $post_id, $post_title);
@@ -190,9 +196,61 @@ class PNRR_Core {
             wp_reset_postdata();
         }
         
+        // Aggiorna i dati dei cloni se richiesto
+        if ($update_clone_data && !empty($deleted_page_slugs) && isset($this->clone_manager)) {
+            if ($remove_clone_data) {
+                // Rimuovi effettivamente i record dei cloni eliminati
+                $result['data_updated'] = $this->update_clone_data_after_deletion($deleted_page_slugs, true);
+            } else {
+                // Marca i cloni come eliminati ma mantieni i record
+                $result['data_updated'] = $this->update_clone_data_after_deletion($deleted_page_slugs, false);
+            }
+        }
+        
         return $result;
     }
     
+    /**
+     * Aggiorna i dati dei cloni dopo l'eliminazione delle pagine
+     *
+     * @param array $deleted_slugs Array con gli slug delle pagine eliminate
+     * @param bool $remove_data Se true rimuove i record, altrimenti li marca come eliminati
+     * @return bool Esito dell'operazione
+     */
+    private function update_clone_data_after_deletion($deleted_slugs, $remove_data = false) {
+        if (!isset($this->clone_manager) || empty($deleted_slugs)) {
+            return false;
+        }
+        
+        $clone_data = $this->clone_manager->get_clone_data();
+        $updated_data = array();
+        $updated = false;
+        
+        foreach ($clone_data as $clone) {
+            if (in_array($clone['slug'], $deleted_slugs)) {
+                if (!$remove_data) {
+                    // Marca come eliminato ma mantieni il record
+                    $clone['page_exists'] = false;
+                    $clone['enabled'] = false;
+                    $clone['status'] = 'deleted';
+                    $updated_data[] = $clone;
+                    $updated = true;
+                }
+                // Se remove_data è true, semplicemente non aggiungiamo questo clone all'array aggiornato
+            } else {
+                // Mantieni il clone intatto
+                $updated_data[] = $clone;
+            }
+        }
+        
+        if ($updated || $remove_data) {
+            // Aggiorna i dati solo se ci sono stati cambiamenti
+            return update_option($this->clone_manager->get_option_name(), $updated_data);
+        }
+        
+        return false;
+    }
+
     /**
      * Registra un'azione nel log del plugin
      * 
