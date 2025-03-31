@@ -58,46 +58,18 @@ class PNRR_Core {
      * Carica script e stili per il frontend (se necessario)
      */
     public function enqueue_public_scripts() {
-        // wp_enqueue_style('pnrr-public-css', PNRR_PLUGIN_URL . 'css/public.css', array(), PNRR_VERSION);
-        // wp_enqueue_script('pnrr-public-js', PNRR_PLUGIN_URL . 'js/public.js', array('jquery'), PNRR_VERSION, true);
+        // wp_enqueue_style('pnrr-public-css', PNRR_PLUGIN_URL . 'assets/css/public.css', array(), PNRR_VERSION);
+        // wp_enqueue_script('pnrr-public-js', PNRR_PLUGIN_URL . 'assets/js/public.js', array('jquery'), PNRR_VERSION, true);
     }
 
     /**
      * Ottiene tutte le pagine che utilizzano Elementor
+     * Utilizza la funzione helper
      *
      * @return array Array associativo di ID => titolo pagina
      */
     public function get_elementor_pages() {
-        $pages = array();
-        
-        $args = array(
-            'post_type' => 'page',
-            'post_status' => 'publish',
-            'posts_per_page' => -1,
-            'meta_query' => array(
-                array(
-                    'key' => '_elementor_data',
-                    'compare' => 'EXISTS'
-                )
-            )
-        );
-        
-        $query = new WP_Query($args);
-        
-        if ($query->have_posts()) {
-            while ($query->have_posts()) {
-                $query->the_post();
-                
-                // Verifica che i dati Elementor non siano vuoti
-                $elementor_data = get_post_meta(get_the_ID(), '_elementor_data', true);
-                if (!empty($elementor_data)) {
-                    $pages[get_the_ID()] = get_the_title();
-                }
-            }
-            wp_reset_postdata();
-        }
-        
-        return $pages;
+        return pnrr_get_elementor_pages();
     }
     
     /**
@@ -121,22 +93,13 @@ class PNRR_Core {
     
     /**
      * Verifica se la pagina esiste e usa Elementor
+     * Utilizza la funzione helper
      *
      * @param int $page_id ID della pagina
      * @return bool True se la pagina è valida
      */
     public function is_valid_elementor_page($page_id) {
-        if (empty($page_id)) {
-            return false;
-        }
-        
-        $page = get_post($page_id);
-        if (!$page || $page->post_type !== 'page' || $page->post_status !== 'publish') {
-            return false;
-        }
-        
-        $elementor_data = get_post_meta($page_id, '_elementor_data', true);
-        return !empty($elementor_data);
+        return pnrr_is_valid_elementor_page($page_id);
     }
 
     /**

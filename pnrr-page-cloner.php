@@ -3,7 +3,7 @@
  * Plugin Name: PNRR Page Cloner e manager
  * Plugin URI: 
  * Description: Plugin per clonare la pagina PNRR e creare 75 versioni con percorsi e contenuti personalizzati
- * Version: 1.0
+ * Version: 1.1
  * Author: Andrea Gouchon
  * Author URI: 
  * License: GPL2
@@ -15,38 +15,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Definizione delle costanti del plugin
-define('PNRR_VERSION', '1.0.0');
-define('PNRR_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('PNRR_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('PNRR_PLUGIN_BASENAME', plugin_basename(__FILE__));
-define('PNRR_OPTION_NAME', 'pnrr_plugin_options');
+// Carica la configurazione del plugin
+require_once plugin_dir_path(__FILE__) . 'includes/config.php';
 
-// Dichiarazione della variabile globale per contenere tutte le istanze principali
-global $pnrr_plugin;
-$pnrr_plugin = array(
-    'core' => null,
-    'admin' => null,
-    'clone_manager' => null
-);
-
-/**
- * Carica le classi del plugin
- */
-// Verifica se i file esistono prima di includerli
-if (file_exists(PNRR_PLUGIN_DIR . 'includes/class-pnrr-core.php')) {
-    require_once PNRR_PLUGIN_DIR . 'includes/class-pnrr-core.php';
-}
-if (file_exists(PNRR_PLUGIN_DIR . 'includes/class-pnrr-clone.php')) {
-    require_once PNRR_PLUGIN_DIR . 'includes/class-pnrr-clone.php';
-}
-if (file_exists(PNRR_PLUGIN_DIR . 'admin/class-pnrr-admin.php')) {
-    require_once PNRR_PLUGIN_DIR . 'admin/class-pnrr-admin.php';
-}
-
-/**
- * Carica il file delle funzioni di utilità
- */
+// Carica il file delle funzioni di utilità
 require_once PNRR_PLUGIN_DIR . 'includes/functions.php';
 
 /**
