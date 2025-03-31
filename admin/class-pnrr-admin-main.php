@@ -66,23 +66,54 @@ class PNRR_Admin_Main {
     }
     
     /**
-     * Carica gli script e i CSS per la pagina di amministrazione
+     * Carica script e stili per l'interfaccia di amministrazione
+     *
+     * @param string $hook Hook corrente
      */
     public function enqueue_admin_scripts($hook) {
-        if ($hook != 'toplevel_page_pnrr-page-cloner') {
+        // Carica gli script solo nelle pagine del plugin
+        if (strpos($hook, 'pnrr') === false) {
             return;
         }
-        
-        // Utilizza solo il file CSS nella directory assets
+
+        // Registra e carica gli stili CSS
         wp_enqueue_style('pnrr-admin-css', PNRR_PLUGIN_URL . 'assets/css/admin.css', array(), PNRR_VERSION);
-        wp_enqueue_script('pnrr-admin-js', PNRR_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_style('pnrr-diagnostics-css', PNRR_PLUGIN_URL . 'assets/css/diagnostics.css', array(), PNRR_VERSION);
         
-        // Includi i script di WordPress Media per il selettore immagine
+        // Registra e carica gli script JS
         wp_enqueue_media();
+        wp_enqueue_script('jquery');
         
-        wp_localize_script('pnrr-admin-js', 'pnrr_cloner', array(
+        // Carica i moduli JS dalla directory assets/js (percorso corretto)
+        wp_enqueue_script('pnrr-master-page', PNRR_PLUGIN_URL . 'assets/js/master-page.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-clone-process', PNRR_PLUGIN_URL . 'assets/js/clone-process.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-delete-process', PNRR_PLUGIN_URL . 'assets/js/delete-process.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-identify-process', PNRR_PLUGIN_URL . 'assets/js/identify-process.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-import-export', PNRR_PLUGIN_URL . 'assets/js/import-export.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-table-management', PNRR_PLUGIN_URL . 'assets/js/table-management.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-media-selector', PNRR_PLUGIN_URL . 'assets/js/media-selector.js', array('jquery', 'wp-media-utils'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-sync-process', PNRR_PLUGIN_URL . 'assets/js/sync-process.js', array('jquery'), PNRR_VERSION, true);
+        wp_enqueue_script('pnrr-general-settings', PNRR_PLUGIN_URL . 'assets/js/general-settings.js', array('jquery'), PNRR_VERSION, true);
+        
+        // Carica il file principale per ultimo (dipende da tutti i moduli)
+        wp_enqueue_script('pnrr-admin', PNRR_PLUGIN_URL . 'assets/js/pnrr-admin.js', array(
+            'jquery', 
+            'pnrr-master-page', 
+            'pnrr-clone-process', 
+            'pnrr-delete-process', 
+            'pnrr-identify-process', 
+            'pnrr-import-export', 
+            'pnrr-table-management', 
+            'pnrr-media-selector', 
+            'pnrr-sync-process', 
+            'pnrr-general-settings'
+        ), PNRR_VERSION, true);
+        
+        // Passa i dati al JavaScript
+        wp_localize_script('pnrr-admin', 'pnrr_cloner', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('pnrr_cloner_nonce'),
+            'plugin_url' => PNRR_PLUGIN_URL
         ));
     }
     
