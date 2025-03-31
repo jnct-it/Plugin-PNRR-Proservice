@@ -14,9 +14,8 @@ if (!defined('ABSPATH')) {
 
 // Definizione delle costanti del plugin
 define('PNRR_VERSION', '1.1');
-define('PNRR_PLUGIN_DIR', plugin_dir_path(dirname(__FILE__)));
-define('PNRR_PLUGIN_URL', plugin_dir_url(dirname(__FILE__)));
-define('PNRR_PLUGIN_BASENAME', plugin_basename(dirname(dirname(__FILE__)) . '/pnrr-page-cloner.php'));
+define('PNRR_PLUGIN_DIR', plugin_dir_path(dirname(__FILE__)) . '/');
+define('PNRR_PLUGIN_URL', plugin_dir_url(dirname(__FILE__)) . '/');
 define('PNRR_OPTION_NAME', 'pnrr_plugin_options');
 
 // Dichiarazione della variabile globale per contenere tutte le istanze principali

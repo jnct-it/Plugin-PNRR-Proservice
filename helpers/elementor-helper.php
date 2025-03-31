@@ -70,83 +70,38 @@ function pnrr_is_valid_elementor_page($page_id) {
 
 /**
  * Modifica gli elementi specifici di Elementor
+ * Wrapper per PNRR_Elementor_Handler::modify_elementor_elements()
  * 
  * @param array $elements Elementi Elementor
  * @param array $clone_data Dati del clone
  * @return array Elementi modificati
  */
 function pnrr_modify_elementor_elements($elements, $clone_data) {
-    foreach ($elements as &$element) {
-        // Modifica logo se è un widget immagine
-        if (isset($element['widgetType']) && $element['widgetType'] === 'image') {
-            if (isset($element['settings']['_element_id']) && $element['settings']['_element_id'] === 'logo') {
-                $element['settings']['image']['url'] = $clone_data['logo_url'];
-            }
-        }
-        
-        // Modifica link home se è un widget pulsante
-        if (isset($element['widgetType']) && $element['widgetType'] === 'button') {
-            if (isset($element['settings']['_element_id']) && $element['settings']['_element_id'] === 'home-button') {
-                $element['settings']['link']['url'] = $clone_data['home_url'];
-            }
-        }
-        
-        // Modifica testo footer se è un widget di testo
-        if (isset($element['widgetType']) && $element['widgetType'] === 'text-editor') {
-            if (isset($element['settings']['_element_id']) && $element['settings']['_element_id'] === 'footer-text') {
-                $element['settings']['editor'] = $clone_data['footer_text'];
-            }
-        }
-        
-        // Ricorsione per sezioni e colonne
-        if (isset($element['elements']) && is_array($element['elements'])) {
-            $element['elements'] = pnrr_modify_elementor_elements($element['elements'], $clone_data);
-        }
+    global $pnrr_plugin;
+    
+    if (isset($pnrr_plugin['elementor_handler']) && method_exists($pnrr_plugin['elementor_handler'], 'modify_elementor_elements')) {
+        return $pnrr_plugin['elementor_handler']->modify_elementor_elements($elements, $clone_data);
     }
     
+    // Fallback alla vecchia implementazione
+    // Implementazione rimossa per evitare duplicati
     return $elements;
 }
 
 /**
  * Copia i meta dati di Elementor
+ * Wrapper per PNRR_Elementor_Handler::copy_elementor_data()
  * 
  * @param int $source_id ID della pagina sorgente
  * @param int $target_id ID della pagina di destinazione
  * @param array $clone_data Dati del clone
  */
 function pnrr_copy_elementor_data($source_id, $target_id, $clone_data) {
-    // Copia il meta _elementor_data
-    $elementor_data = get_post_meta($source_id, '_elementor_data', true);
-    if (!empty($elementor_data)) {
-        // Converte in array per manipolazione
-        $elementor_array = json_decode($elementor_data, true);
-        
-        if (is_array($elementor_array)) {
-            // Modifica gli elementi specifici
-            $elementor_array = pnrr_modify_elementor_elements($elementor_array, $clone_data);
-            
-            // Salva i dati modificati
-            update_post_meta($target_id, '_elementor_data', wp_slash(json_encode($elementor_array)));
-        }
+    global $pnrr_plugin;
+    
+    if (isset($pnrr_plugin['elementor_handler']) && method_exists($pnrr_plugin['elementor_handler'], 'copy_elementor_data')) {
+        return $pnrr_plugin['elementor_handler']->copy_elementor_data($source_id, $target_id, $clone_data);
     }
     
-    // Copia altri meta necessari per Elementor
-    $elementor_meta_keys = array(
-        '_elementor_edit_mode',
-        '_elementor_template_type',
-        '_elementor_version',
-        '_elementor_css'
-    );
-    
-    foreach ($elementor_meta_keys as $meta_key) {
-        $meta_value = get_post_meta($source_id, $meta_key, true);
-        if (!empty($meta_value)) {
-            update_post_meta($target_id, $meta_key, $meta_value);
-        }
-    }
-    
-    // Rigenera CSS per la pagina clonata
-    if (class_exists('\Elementor\Plugin')) {
-        \Elementor\Plugin::$instance->files_manager->clear_cache();
-    }
+    // Fallback rimosso per evitare duplicati
 }

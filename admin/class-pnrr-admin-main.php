@@ -44,8 +44,9 @@ class PNRR_Admin_Main {
             $this->display_handler = new PNRR_Admin_Display();
         }
         
-        // Aggiunta delle azioni e dei filtri per l'admin
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        // RIMUOVERE QUESTA RIGA PER EVITARE MENU DUPLICATI
+        // add_action('admin_menu', array($this, 'add_admin_menu'));
+        
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
     
@@ -72,7 +73,7 @@ class PNRR_Admin_Main {
             return;
         }
         
-        // Utilizzo i percorsi aggiornati per i file assets
+        // Utilizza solo il file CSS nella directory assets
         wp_enqueue_style('pnrr-admin-css', PNRR_PLUGIN_URL . 'assets/css/admin.css', array(), PNRR_VERSION);
         wp_enqueue_script('pnrr-admin-js', PNRR_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), PNRR_VERSION, true);
         

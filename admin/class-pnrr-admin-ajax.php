@@ -28,6 +28,7 @@ class PNRR_Admin_Ajax {
         add_action('wp_ajax_pnrr_toggle_clone', array($this, 'ajax_toggle_clone'));
         add_action('wp_ajax_pnrr_sync_clone_data', array($this, 'ajax_sync_clone_data'));
         add_action('wp_ajax_pnrr_get_filtered_clones', array($this, 'ajax_get_filtered_clones'));
+        add_action('wp_ajax_pnrr_save_general_settings', array($this, 'ajax_save_general_settings'));
     }
     
     /**
@@ -60,10 +61,12 @@ class PNRR_Admin_Ajax {
             return;
         }
         
+        // Ottieni i dati dei cloni e il numero totale
         $clone_data = $clone_manager->get_clone_data();
         $clone_index = isset($_POST['clone_index']) ? intval($_POST['clone_index']) : 0;
+        $total_clones = $clone_manager->get_number_of_clones();
         
-        if ($clone_index >= count($clone_data)) {
+        if ($clone_index >= $total_clones) {
             // Esegui sincronizzazione finale dopo aver completato tutte le clonazioni
             $clone_manager->sync_clone_data(true);
             
@@ -85,7 +88,7 @@ class PNRR_Admin_Ajax {
         wp_send_json_success(array(
             'completed' => false,
             'clone_index' => $clone_index + 1,
-            'total' => count($clone_data),
+            'total' => $total_clones,
             'page_id' => $result,
             'page_title' => $clone_data[$clone_index]['title'],
             'page_url' => get_permalink($result)
@@ -226,6 +229,9 @@ class PNRR_Admin_Ajax {
             return;
         }
         
+        // Determina se creare automaticamente le pagine
+        $create_pages = isset($_POST['create_pages']) ? (bool)$_POST['create_pages'] : false;
+        
         // Valida il file caricato
         $file_path = pnrr_validate_uploaded_csv($_FILES['csv_file']);
         
@@ -237,7 +243,7 @@ class PNRR_Admin_Ajax {
         }
         
         // Processa l'importazione
-        $result = pnrr_process_csv_import($file_path);
+        $result = pnrr_process_csv_import($file_path, $create_pages);
         
         if (is_wp_error($result)) {
             wp_send_json_error(array(
@@ -246,13 +252,26 @@ class PNRR_Admin_Ajax {
             return;
         }
         
+        // Prepara il messaggio di risposta
+        $message = sprintf(
+            'Importazione completata: %d cloni importati con successo',
+            $result['imported']
+        );
+        
+        if ($create_pages && isset($result['pages_created'])) {
+            $message .= sprintf(
+                '. %d pagine clone create.',
+                $result['pages_created']
+            );
+        }
+        
         // Restituisci il risultato dell'importazione
         wp_send_json_success(array(
-            'message' => sprintf(
-                'Importazione completata: %d cloni importati con successo',
-                $result['imported']
-            ),
-            'imported' => $result['imported']
+            'message' => $message,
+            'imported' => $result['imported'],
+            'pages_created' => isset($result['pages_created']) ? $result['pages_created'] : 0,
+            'show_generate_button' => !$create_pages && !isset($result['page_creation_error']),
+            'need_page_generation' => !$create_pages
         ));
     }
     
@@ -295,7 +314,6 @@ class PNRR_Admin_Ajax {
             if ($index === $clone_index) {
                 continue;
             }
-            
             if ($clone['slug'] === sanitize_title($clone_data['slug'])) {
                 wp_send_json_error(array('message' => 'Lo slug è già in uso da un altro clone. Scegli uno slug unico.'));
                 return;
@@ -320,12 +338,11 @@ class PNRR_Admin_Ajax {
             // Registra l'aggiornamento nei log se disponibile
             if (method_exists($pnrr_plugin['core'], 'log_action')) {
                 $pnrr_plugin['core']->log_action(
-                    'update_clone', 
-                    $clone_index, 
+                    'update_clone',
+                    $clone_index,
                     $update_data['title']
                 );
             }
-            
             wp_send_json_success(array(
                 'message' => 'Clone aggiornato con successo',
                 'clone_id' => $clone_index,
@@ -411,7 +428,6 @@ class PNRR_Admin_Ajax {
                     'Sincronizzazione dati cloni'
                 );
             }
-            
             wp_send_json_success(array(
                 'message' => 'Sincronizzazione completata con successo',
                 'result' => $result
@@ -452,13 +468,11 @@ class PNRR_Admin_Ajax {
         
         // Genera l'HTML della tabella
         ob_start();
-        
         // Delega la generazione HTML al display handler
         global $pnrr_plugin;
         if (isset($pnrr_plugin['admin']) && 
             method_exists($pnrr_plugin['admin'], 'get_display_handler') && 
             method_exists($pnrr_plugin['admin']->get_display_handler(), 'render_clones_table')) {
-            
             $pnrr_plugin['admin']->get_display_handler()->render_clones_table($clones, $show_deleted);
         } else {
             // Fallback: mostra solo un messaggio base
@@ -470,7 +484,6 @@ class PNRR_Admin_Ajax {
                 }
             }
         }
-        
         $html = ob_get_clean();
         
         wp_send_json_success(array(
@@ -478,4 +491,75 @@ class PNRR_Admin_Ajax {
             'count' => count($clones)
         ));
     }
+    
+    /**
+     * Gestisce la richiesta Ajax per salvare le impostazioni generali
+     */
+    public function ajax_save_general_settings() {
+        // Verifica di sicurezza
+        check_ajax_referer('pnrr_cloner_nonce', 'nonce');
+        
+        // Verifica dei permessi
+        if (!current_user_can('manage_options')) {
+            pnrr_debug_log("Salvataggio impostazioni: permessi insufficienti", 'error');
+            wp_send_json_error(array('message' => 'Permessi insufficienti'));
+            return;
+        }
+        
+        // Ottiene il numero di cloni
+        $number_of_clones = isset($_POST['number_of_clones']) ? intval($_POST['number_of_clones']) : 75;
+        
+        pnrr_debug_log("Tentativo di aggiornamento numero cloni: {$number_of_clones}", 'info');
+        
+        // Validazione
+        if ($number_of_clones < 1) {
+            $number_of_clones = 1;
+            pnrr_debug_log("Numero cloni corretto a 1 (era < 1)", 'warning');
+        } elseif ($number_of_clones > 1000) {
+            $number_of_clones = 1000;
+            pnrr_debug_log("Numero cloni corretto a 1000 (era > 1000)", 'warning');
+        }
+        
+        // Salva le impostazioni
+        $result = pnrr_update_option('number_of_clones', $number_of_clones);
+        
+        pnrr_debug_log("Risultato aggiornamento numero cloni: " . ($result ? 'successo' : 'fallimento'), 'info');
+        
+        if ($result) {
+            // Log dell'operazione
+            global $pnrr_plugin;
+            if (isset($pnrr_plugin['core']) && method_exists($pnrr_plugin['core'], 'log_action')) {
+                $pnrr_plugin['core']->log_action(
+                    'update_settings',
+                    0,
+                    'Aggiornato numero di cloni a ' . $number_of_clones
+                );
+                pnrr_debug_log("log_action chiamato per l'aggiornamento", 'info');
+            }
+            
+            // Forza il ricaricamento dei dati nel clone manager
+            if (isset($pnrr_plugin['clone_manager'])) {
+                pnrr_debug_log("Tentativo di ricaricamento dati nel clone manager", 'info');
+                
+                try {
+                    // Usa solo il metodo reload_data che è pubblico
+                    $reload_result = $pnrr_plugin['clone_manager']->reload_data();
+                    pnrr_debug_log("Risultato ricaricamento: " . ($reload_result ? 'successo' : 'fallimento'), 'info');
+                } catch (Exception $e) {
+                    pnrr_debug_log("Eccezione durante il ricaricamento dati: " . $e->getMessage(), 'error');
+                }
+            } else {
+                pnrr_debug_log("Clone manager non disponibile per il ricaricamento", 'error');
+            }
+            
+            wp_send_json_success(array(
+                'message' => 'Impostazioni salvate con successo',
+                'number_of_clones' => $number_of_clones
+            ));
+        } else {
+            pnrr_debug_log("Fallimento aggiornamento opzione 'number_of_clones'", 'error');
+            wp_send_json_error(array('message' => 'Errore durante il salvataggio delle impostazioni'));
+        }
+    }
 }
+?>

@@ -38,13 +38,62 @@ function pnrr_autoload($class_name) {
 /**
  * Carica le classi principali del plugin e i file helper
  */
-require_once PNRR_PLUGIN_DIR . 'core/class-pnrr-core.php';
-require_once PNRR_PLUGIN_DIR . 'core/class-pnrr-clone.php';
-require_once PNRR_PLUGIN_DIR . 'admin/class-pnrr-admin.php';
+function pnrr_load_core_classes() {
+    // File core del plugin
+    $core_files = [
+        'core/class-pnrr-core.php',
+        'core/class-pnrr-clone-data-manager.php',
+        'core/class-pnrr-clone.php',
+        'core/class-pnrr-page-handler.php',
+        'core/class-pnrr-elementor-handler.php'
+    ];
+    
+    // Carica i file core
+    foreach ($core_files as $file) {
+        $file_path = PNRR_PLUGIN_DIR . $file;
+        if (file_exists($file_path)) {
+            require_once $file_path;
+        }
+    }
+    
+    // Carica i file helper
+    require_once PNRR_PLUGIN_DIR . 'helpers/import-export.php';
+    require_once PNRR_PLUGIN_DIR . 'helpers/elementor-helper.php';
+    
+    // Carica il file di debug se WP_DEBUG è attivato
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        require_once PNRR_PLUGIN_DIR . 'includes/debug-log.php';
+    }
+}
 
-// Carica i file helper
-require_once PNRR_PLUGIN_DIR . 'helpers/import-export.php';
-require_once PNRR_PLUGIN_DIR . 'helpers/elementor-helper.php';
+// Sostituisci il vecchio caricamento esplicito
+pnrr_load_core_classes();
+
+/**
+ * Registra gli script e gli stili del plugin
+ */
+function pnrr_register_assets() {
+    // Versione per cache busting
+    $version = PNRR_VERSION;
+    
+    // Registra CSS
+    wp_register_style(
+        'pnrr-admin-css', 
+        PNRR_PLUGIN_URL . 'assets/css/admin.css', 
+        array(), 
+        $version
+    );
+    
+    // Registra JS
+    wp_register_script(
+        'pnrr-admin-js', 
+        PNRR_PLUGIN_URL . 'assets/js/admin.js', 
+        array('jquery'), 
+        $version, 
+        true
+    );
+}
+add_action('admin_init', 'pnrr_register_assets');
 
 /**
  * Ottiene le opzioni del plugin
@@ -72,8 +121,44 @@ function pnrr_get_option($key = null, $default = null) {
  */
 function pnrr_update_option($key, $value) {
     $options = get_option(PNRR_OPTION_NAME, array());
+    $old_value = isset($options[$key]) ? $options[$key] : null;
     $options[$key] = $value;
-    return update_option(PNRR_OPTION_NAME, $options);
+    $result = update_option(PNRR_OPTION_NAME, $options);
+    
+    // Aggiungi un log sempre, indipendentemente da WP_DEBUG
+    $log_message = "Aggiornamento opzione '{$key}': da " . var_export($old_value, true) . " a " . var_export($value, true) . " - Risultato: " . ($result ? 'successo' : 'fallimento');
+    pnrr_debug_log($log_message);
+    
+    return $result;
+}
+
+/**
+ * Log di debug che funziona anche senza WP_DEBUG
+ * 
+ * @param string $message Messaggio da loggare
+ * @param string $level Livello di log (info, warning, error)
+ */
+function pnrr_debug_log($message, $level = 'info') {
+    // Crea directory dei log se non esiste
+    $upload_dir = wp_upload_dir();
+    $log_dir = $upload_dir['basedir'] . '/pnrr-logs';
+    if (!file_exists($log_dir)) {
+        wp_mkdir_p($log_dir);
+    }
+    
+    // Nome file di log basato sulla data
+    $log_file = $log_dir . '/pnrr-debug-' . date('Y-m-d') . '.log';
+    
+    // Prefisso con data, ora e livello
+    $prefix = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($level) . '] ';
+    
+    // Formatta il messaggio
+    if (is_array($message) || is_object($message)) {
+        $message = print_r($message, true);
+    }
+    
+    // Scrivi nel log
+    error_log($prefix . $message . PHP_EOL, 3, $log_file);
 }
 
 /**

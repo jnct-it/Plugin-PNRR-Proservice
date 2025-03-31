@@ -22,7 +22,10 @@ if (!isset($pnrr_plugin['core']) || !is_object($pnrr_plugin['core']) ||
 
 $core = $pnrr_plugin['core'];
 $clone_manager = $pnrr_plugin['clone_manager'];
-$number_of_clones = count($clone_manager->get_clone_data());
+
+// Ottieni le opzioni del plugin
+$plugin_options = pnrr_get_option();
+$number_of_clones = isset($plugin_options['number_of_clones']) ? $plugin_options['number_of_clones'] : 75;
 
 // Ottieni le pagine Elementor disponibili
 $elementor_pages = $core->get_elementor_pages();
@@ -36,9 +39,6 @@ if ($master_page_id && isset($elementor_pages[$master_page_id])) {
     $master_page = get_post($master_page_id);
     $source_page_name = $master_page->post_name;
 }
-
-// Ottieni le opzioni del plugin
-$plugin_options = pnrr_get_option();
 
 // Ottieni il conteggio delle pagine clone
 $clone_count = 0;
@@ -80,6 +80,23 @@ if (!empty($sync_results) && isset($sync_results['discovered']) && $sync_results
             <p>Questo plugin ti permette di clonare una pagina master Elementor e creare <?php echo intval($number_of_clones); ?> versioni con percorsi e contenuti personalizzati.</p>
             <p>Versione del plugin: <?php echo esc_html(PNRR_VERSION); ?></p>
         </div>
+        
+        <!-- Sezione per la configurazione generale -->
+        <div class="pnrr-general-settings">
+            <h2>Configurazione Generale</h2>
+            
+            <div class="settings-form">
+                <div class="form-row">
+                    <label for="number-of-clones">Numero di cloni da generare:</label>
+                    <input type="number" id="number-of-clones" name="number_of_clones" min="1" max="1000" value="<?php echo intval($number_of_clones); ?>" class="small-text">
+                    <button id="save-general-settings" class="button button-primary">Salva Impostazioni</button>
+                </div>
+                <div id="general-settings-feedback" style="display: none;"></div>
+                <p class="description">Imposta il numero di cloni che verranno generati quando utilizzi il pulsante "Clona Pagina Master".</p>
+            </div>
+        </div>
+        
+        <hr>
         
         <!-- Sezione per la selezione della pagina master -->
         <div class="pnrr-master-selection">
@@ -261,6 +278,13 @@ if (!empty($sync_results) && isset($sync_results['discovered']) && $sync_results
                     <div class="form-row">
                         <label for="csv-file">Seleziona file CSV:</label>
                         <input type="file" id="csv-file" name="csv_file" accept=".csv" required>
+                        <div class="import-options">
+                            <label>
+                                <input type="checkbox" name="create_pages" id="create-pages-checkbox" value="1">
+                                Genera automaticamente le pagine dopo l'importazione
+                            </label>
+                            <p class="description">Se non selezionato, potrai generare le pagine successivamente.</p>
+                        </div>
                         <button type="submit" class="button button-primary">Importa</button>
                     </div>
                 </form>
@@ -279,16 +303,17 @@ if (!empty($sync_results) && isset($sync_results['discovered']) && $sync_results
                 <h3>Istruzioni</h3>
                 <p>Il file CSV deve avere le seguenti colonne:</p>
                 <ul>
-                    <li><strong>slug</strong> - Identificativo univoco della pagina (obbligatorio)</li>
-                    <li><strong>title</strong> - Titolo della pagina (obbligatorio)</li>
-                    <li><strong>logo_url</strong> - URL dell'immagine del logo</li>
-                    <li><strong>footer_text</strong> - Testo HTML per il footer</li>
-                    <li><strong>home_url</strong> - URL della home esterna</li>
+                    <li><strong>Nome</strong> - Titolo della pagina (obbligatorio)</li>
+                    <li><strong>Logo</strong> - URL dell'immagine del logo</li>
+                    <li><strong>Url</strong> - URL della home esterna</li>
+                    <li><strong>Indirizzo</strong> - Indirizzo fisico</li>
+                    <li><strong>Contatti</strong> - Informazioni di contatto</li>
+                    <li><strong>Altre</strong> - Informazioni aggiuntive</li>
                 </ul>
                 <p>Esempio:</p>
-                <pre>slug,title,logo_url,footer_text,home_url
-pnrr-comune1,PNRR Comune di Roma,https://esempio.it/logo1.png,"&lt;p&gt;Footer Comune 1&lt;/p&gt;",https://comune1.it
-pnrr-comune2,PNRR Comune di Milano,https://esempio.it/logo2.png,"&lt;p&gt;Footer Comune 2&lt;/p&gt;",https://comune2.it</pre>
+                <pre>Nome,Logo,Url,Indirizzo,Contatti,Altre
+Comune di Roma,https://esempio.it/logo1.png,https://comune1.it,"Via del Corso 1, Roma","Tel: 06 1234567, Email: info@comune.roma.it","Orari: Lun-Ven 9-18"
+Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1, Milano","Tel: 02 1234567, Email: info@comune.milano.it","Orari: Lun-Ven 8-17"</pre>
                 
                 <p><strong>Nota:</strong> L'importazione sovrascriverà tutti i dati dei cloni esistenti.</p>
             </div>
@@ -514,15 +539,15 @@ pnrr-comune2,PNRR Comune di Milano,https://esempio.it/logo2.png,"&lt;p&gt;Footer
                         </div>
                         
                         <div class="form-field">
-                            <label for="edit-clone-title">Titolo:</label>
+                            <label for="edit-clone-title">Nome/Titolo:</label>
                             <input type="text" id="edit-clone-title" name="title" class="regular-text" required>
                             <p class="description">Titolo visibile della pagina.</p>
                         </div>
                         
                         <div class="form-field">
-                            <label for="edit-clone-home-url">Home URL:</label>
+                            <label for="edit-clone-home-url">URL sito:</label>
                             <input type="url" id="edit-clone-home-url" name="home_url" class="regular-text">
-                            <p class="description">URL di destinazione per il pulsante Home.</p>
+                            <p class="description">URL del sito esterno.</p>
                         </div>
                         
                         <div class="form-field media-field">
@@ -543,8 +568,26 @@ pnrr-comune2,PNRR Comune di Milano,https://esempio.it/logo2.png,"&lt;p&gt;Footer
                         </div>
                         
                         <div class="form-field">
+                            <label for="edit-clone-address">Indirizzo:</label>
+                            <textarea id="edit-clone-address" name="address" rows="2" class="large-text"></textarea>
+                            <p class="description">Indirizzo fisico dell'ente.</p>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="edit-clone-contacts">Contatti:</label>
+                            <textarea id="edit-clone-contacts" name="contacts" rows="2" class="large-text"></textarea>
+                            <p class="description">Informazioni di contatto (email, telefono, ecc.).</p>
+                        </div>
+                        
+                        <div class="form-field">
+                            <label for="edit-clone-other-info">Altre informazioni:</label>
+                            <textarea id="edit-clone-other-info" name="other_info" rows="2" class="large-text"></textarea>
+                            <p class="description">Altre informazioni utili.</p>
+                        </div>
+                        
+                        <div class="form-field">
                             <label for="edit-clone-footer-text">Testo Footer:</label>
-                            <textarea id="edit-clone-footer-text" name="footer_text" rows="5" class="large-text"></textarea>
+                            <textarea id="edit-clone-footer-text" name="footer_text" rows="3" class="large-text"></textarea>
                             <p class="description">È possibile utilizzare HTML per formattare il testo del footer.</p>
                         </div>
                         

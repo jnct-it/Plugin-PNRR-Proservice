@@ -3,7 +3,7 @@
  * Plugin Name: PNRR Page Cloner e manager
  * Plugin URI: 
  * Description: Plugin per clonare la pagina PNRR e creare 75 versioni con percorsi e contenuti personalizzati
- * Version: 1.1
+ * Version: 1.2
  * Author: Andrea Gouchon
  * Author URI: 
  * License: GPL2
@@ -14,6 +14,9 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Definisci una costante per disabilitare il codice legacy
+define('PNRR_DISABLED_LEGACY', true);
 
 // Carica la configurazione del plugin
 require_once plugin_dir_path(__FILE__) . 'includes/config.php';
@@ -31,6 +34,11 @@ function pnrr_init() {
     if (class_exists('PNRR_Core')) {
         $pnrr_plugin['core'] = new PNRR_Core();
         $pnrr_plugin['clone_manager'] = $pnrr_plugin['core']->get_clone_manager();
+        
+        // Inizializza anche il gestore di Elementor per centralizzare
+        if (class_exists('PNRR_Elementor_Handler')) {
+            $pnrr_plugin['elementor_handler'] = new PNRR_Elementor_Handler();
+        }
     }
     
     // Inizializza l'amministrazione solo nel backend
