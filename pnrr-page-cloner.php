@@ -75,3 +75,28 @@ function pnrr_deactivate() {
     // Operazioni da eseguire durante la disattivazione del plugin
 }
 register_deactivation_hook(__FILE__, 'pnrr_deactivate');
+
+// Aggiungi un filtro per debug per verificare il funzionamento
+if (defined('WP_DEBUG') && WP_DEBUG) {
+    add_action('wp_footer', 'pnrr_debug_title_info');
+    
+    function pnrr_debug_title_info() {
+        if (!is_admin() && is_singular('page')) {
+            $post_id = get_the_ID();
+            $title = get_the_title($post_id);
+            $clean_title = get_post_meta($post_id, '_pnrr_clean_title', true);
+            $original_title = get_post_meta($post_id, '_pnrr_title', true);
+            $clone_uuid = get_post_meta($post_id, '_pnrr_clone_uuid', true);
+            
+            if (!empty($clone_uuid)) {
+                echo '<!-- PNRR DEBUG INFO:
+                Page ID: ' . $post_id . '
+                Original Title from DB: ' . $title . '
+                Meta Title: ' . $original_title . '
+                Clean Title Meta: ' . $clean_title . '
+                Clone UUID: ' . $clone_uuid . '
+                -->';
+            }
+        }
+    }
+}

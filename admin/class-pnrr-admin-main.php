@@ -44,9 +44,7 @@ class PNRR_Admin_Main {
             $this->display_handler = new PNRR_Admin_Display();
         }
         
-        // RIMUOVERE QUESTA RIGA PER EVITARE MENU DUPLICATI
-        // add_action('admin_menu', array($this, 'add_admin_menu'));
-        
+        add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
     
@@ -54,14 +52,35 @@ class PNRR_Admin_Main {
      * Aggiunge la voce di menu nella dashboard di WordPress
      */
     public function add_admin_menu() {
+        // Aggiungi pagina principale
         add_menu_page(
             'PNRR Page Cloner',
-            'PNRR Cloner',
+            'PNRR Page Cloner',
             'manage_options',
             'pnrr-page-cloner',
             array($this, 'display_admin_page'),
             'dashicons-admin-page',
             30
+        );
+        
+        // Aggiungi sottopagina dashboard come alias della principale
+        add_submenu_page(
+            'pnrr-page-cloner',
+            'PNRR Dashboard',
+            'Dashboard',
+            'manage_options',
+            'pnrr-page-cloner',
+            array($this, 'display_admin_page')
+        );
+        
+        // Aggiungi sottopagina per la documentazione degli shortcode
+        add_submenu_page(
+            'pnrr-page-cloner',
+            'Documentazione Shortcode',
+            'Documentazione',
+            'manage_options',
+            'pnrr-shortcode-docs',
+            array($this, 'display_shortcode_docs')
         );
     }
     
@@ -95,6 +114,15 @@ class PNRR_Admin_Main {
         wp_enqueue_script('pnrr-sync-process', PNRR_PLUGIN_URL . 'assets/js/sync-process.js', array('jquery'), PNRR_VERSION, true);
         wp_enqueue_script('pnrr-general-settings', PNRR_PLUGIN_URL . 'assets/js/general-settings.js', array('jquery'), PNRR_VERSION, true);
         
+        // Carica il nuovo script per le funzionalità del modale di modifica
+        wp_enqueue_script(
+            'pnrr-edit-clone-modal',
+            PNRR_PLUGIN_URL . 'assets/js/edit-clone-modal.js',
+            array('jquery'),
+            PNRR_VERSION,
+            true
+        );
+        
         // Carica il file principale per ultimo (dipende da tutti i moduli)
         wp_enqueue_script('pnrr-admin', PNRR_PLUGIN_URL . 'assets/js/pnrr-admin.js', array(
             'jquery', 
@@ -106,7 +134,8 @@ class PNRR_Admin_Main {
             'pnrr-table-management', 
             'pnrr-media-selector', 
             'pnrr-sync-process', 
-            'pnrr-general-settings'
+            'pnrr-general-settings',
+            'pnrr-edit-clone-modal'
         ), PNRR_VERSION, true);
         
         // Passa i dati al JavaScript
@@ -126,6 +155,20 @@ class PNRR_Admin_Main {
         
         // Delega la visualizzazione al display handler
         $this->display_handler->render_admin_page($sync_results);
+    }
+    
+    /**
+     * Visualizza la pagina di documentazione degli shortcode
+     */
+    public function display_shortcode_docs() {
+        echo '<div class="wrap">';
+        echo '<h1>Documentazione Shortcode PNRR Cloner</h1>';
+        if (file_exists(PNRR_PLUGIN_DIR . 'admin/partials/shortcode-instructions.php')) {
+            include PNRR_PLUGIN_DIR . 'admin/partials/shortcode-instructions.php';
+        } else {
+            echo '<div class="notice notice-error"><p>File di documentazione non trovato.</p></div>';
+        }
+        echo '</div>';
     }
     
     /**

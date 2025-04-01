@@ -163,4 +163,71 @@ class PNRR_Elementor_Handler {
         
         return $pages;
     }
+    
+    /**
+     * Duplica i dati di Elementor da una pagina all'altra
+     * 
+     * @param int $source_id ID della pagina sorgente (master)
+     * @param int $target_id ID della pagina di destinazione (clone)
+     * @param array $clone_data Dati del clone
+     * @return bool Esito dell'operazione
+     */
+    public function duplicate_elementor_data($source_id, $target_id, $clone_data = []) {
+        // Recupera i dati Elementor della pagina master
+        $source_data = $this->get_elementor_data($source_id);
+        
+        // Se non ci sono dati, restituisci false
+        if (!$source_data) {
+            return false;
+        }
+        
+        // Elabora gli shortcode nel contenuto Elementor se ci sono dati del clone
+        if (!empty($clone_data)) {
+            $source_data = $this->process_elementor_shortcodes($source_data, $target_id, $clone_data);
+        }
+        
+        // Aggiorna i dati Elementor nella pagina clone
+        return $this->update_elementor_data($target_id, $source_data);
+    }
+    
+    /**
+     * Elabora gli shortcode nei dati Elementor
+     * 
+     * @param array $elementor_data Dati Elementor
+     * @param int $target_id ID della pagina clone
+     * @param array $clone_data Dati del clone
+     * @return array Dati Elementor elaborati
+     */
+    private function process_elementor_shortcodes($elementor_data, $target_id, $clone_data) {
+        // Debug - Log dei dati Elementor e del clone prima dell'elaborazione
+        if (function_exists('pnrr_debug_log')) {
+            pnrr_debug_log("Elaborazione shortcode Elementor - ID pagina: " . $target_id);
+            pnrr_debug_log("Dati clone: " . print_r($clone_data, true));
+        }
+        
+        // Converti l'array in stringa JSON
+        $json_data = json_encode($elementor_data);
+        
+        // Elabora gli shortcode nella stringa JSON
+        if (function_exists('pnrr_process_elementor_content_shortcodes')) {
+            // Assicuriamo che l'elaborazione avvenga senza escape dell'HTML
+            $json_data = stripslashes($json_data); // Rimuove eventuali backslash esistenti
+            $json_data = pnrr_process_elementor_content_shortcodes($json_data, $target_id, $clone_data);
+        }
+        
+        // Converti di nuovo in array e restituisci
+        $processed_data = json_decode($json_data, true);
+        
+        // Verifica se c'è stato un errore di parsing JSON
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            // Log dell'errore
+            if (function_exists('pnrr_debug_log')) {
+                pnrr_debug_log('Errore parsing JSON dopo elaborazione shortcode: ' . json_last_error_msg(), 'error');
+            }
+            // Fallback ai dati originali se c'è un errore
+            return $elementor_data;
+        }
+        
+        return $processed_data;
+    }
 }

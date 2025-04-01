@@ -167,11 +167,11 @@ function pnrr_validate_uploaded_csv($file) {
 }
 
 /**
- * Processa l'importazione di un file CSV
+ * Processa un file CSV e importa i dati dei cloni
  * 
- * @param string $file_path Percorso al file CSV temporaneo
- * @param bool $create_pages Se true, crea automaticamente le pagine clone
- * @return array|WP_Error Risultato dell'importazione o errore
+ * @param string $file_path Percorso del file CSV
+ * @param bool $create_pages Se true, crea anche le pagine dopo l'importazione
+ * @return array|WP_Error Array con risultati o oggetto errore
  */
 function pnrr_process_csv_import($file_path, $create_pages = false) {
     global $pnrr_plugin;
@@ -183,15 +183,29 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
     
     $clone_manager = $pnrr_plugin['clone_manager'];
     
-    // Apri il file CSV
+    // Apri il file CSV con codifica UTF-8
     $handle = fopen($file_path, 'r');
     if (!$handle) {
         return new WP_Error('file_open_error', 'Impossibile aprire il file CSV');
     }
     
+    // Rileva l'encoding del file e convertilo in UTF-8 se necessario
+    $first_bytes = fread($handle, 3);
+    rewind($handle);
+    $bom = "\xEF\xBB\xBF"; // UTF-8 BOM
+    $is_utf8_bom = (substr($first_bytes, 0, 3) === $bom);
+    
+    // Se c'è BOM, salta i primi 3 byte
+    if ($is_utf8_bom) {
+        fseek($handle, 3);
+    }
+    
     // Prova a rilevare automaticamente il delimitatore
     $first_line = fgets($handle);
     rewind($handle);
+    if ($is_utf8_bom) {
+        fseek($handle, 3);
+    }
     
     $delimiter = ',';  // Default a virgola
     
@@ -202,11 +216,11 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
     
     // Log per debug
     if (function_exists('pnrr_debug_log')) {
-        pnrr_debug_log("Importazione CSV - Delimitatore rilevato: " . $delimiter);
+        pnrr_debug_log("Importazione CSV - Delimitatore rilevato: " . $delimiter . ", UTF-8 BOM: " . ($is_utf8_bom ? "Sì" : "No"));
     }
     
     // Leggi intestazioni con il delimitatore corretto
-    $header = fgetcsv($handle, 0, $delimiter);
+    $header = fgetcsv($handle, 0, $delimiter, '"', '"'); // Gestisce correttamente le virgolette
     if (!$header) {
         fclose($handle);
         return new WP_Error('invalid_format', 'Formato CSV non valido o intestazioni mancanti');
@@ -221,19 +235,21 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         pnrr_debug_log("Intestazioni trovate: " . print_r($header, true));
     }
     
-    // Mapping aggiornato per le nuove colonne del CSV
+    // Mapping aggiornato per le nuove colonne del CSV - aggiungi più varianti per essere sicuri
     $field_mapping = [
-        'nome'             => 'title',
-        'logo'             => 'logo_url',
-        'logo (url)'       => 'logo_url',
-        'url sito'         => 'home_url',
-        'url'              => 'home_url',
-        'indirizzo'        => 'address',
-        'indirizzo (testo)'=> 'address',
-        'contatti'         => 'contacts',
-        'contatti (testo)' => 'contacts',
-        'altro'            => 'other_info',
-        'altro (testo)'    => 'other_info'
+        'nome'               => 'title',
+        'logo'               => 'logo_url',
+        'logo (url)'         => 'logo_url',
+        'url sito'           => 'home_url',
+        'url'                => 'home_url',
+        'indirizzo'          => 'address',
+        'indirizzo (testo)'  => 'address',
+        'contatti'           => 'contacts',
+        'contatti (testo)'   => 'contacts',
+        'altro'              => 'other_info',
+        'altre'              => 'other_info',
+        'altre informazioni' => 'other_info',
+        'altro (testo)'      => 'other_info'
     ];
     
     // Verifica che l'intestazione obbligatoria "nome" sia presente
@@ -253,11 +269,17 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         );
     }
     
+    // Debug per verificare quali intestazioni sono state trovate
+    if (function_exists('pnrr_debug_log')) {
+        pnrr_debug_log("Importazione CSV - Intestazioni rilevate: " . print_r($header, true));
+        pnrr_debug_log("Importazione CSV - Intestazioni mappate: " . print_r($field_mapping, true));
+    }
+    
     // Avvia l'importazione
     $clones_data = [];
     $row_number = 1; // La prima riga è l'intestazione
     
-    while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+    while (($row = fgetcsv($handle, 0, $delimiter, '"', '"')) !== false) { // Gestisce correttamente le virgolette
         $row_number++;
         
         if (count($row) < count($header)) {
@@ -265,14 +287,33 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
             $row = array_pad($row, count($header), '');
         }
         
+        // Debug per visualizzare la riga corrente
+        if (function_exists('pnrr_debug_log')) {
+            pnrr_debug_log("Importazione CSV - Riga $row_number: " . print_r($row, true));
+        }
+        
         // Costruisci l'array dei dati del clone
         $clone_data = [];
         
-        // Processa ogni colonna
+        // Processa ogni colonna e gestisci la codifica dei caratteri
         foreach ($header as $index => $column) {
+            $column = strtolower(trim($column));
+            
             if (isset($field_mapping[$column])) {
                 $mapped_field = $field_mapping[$column];
-                $value = isset($row[$index]) ? trim($row[$index]) : '';
+                $value = isset($row[$index]) ? $row[$index] : '';
+                
+                // Debug più dettagliato
+                if (function_exists('pnrr_debug_log')) {
+                    pnrr_debug_log("Importazione CSV - Colonna '$column' => Campo '$mapped_field': " . substr($value, 0, 50) . (strlen($value) > 50 ? '...' : ''));
+                }
+                
+                // Assicura che i dati siano in UTF-8 valido
+                if (!empty($value) && !mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'auto');
+                }
+                
+                // Preserva i ritorni a capo e i caratteri speciali
                 $clone_data[$mapped_field] = $value;
             }
         }
@@ -280,6 +321,22 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         // Assicura che ci sia almeno un titolo
         if (empty($clone_data['title'])) {
             continue; // Salta righe senza titolo
+        }
+        
+        // Gestione prefisso PNRR
+        $title = isset($clone_data['title']) ? sanitize_text_field($clone_data['title']) : '';
+        if (!empty($title)) {
+            // Se il titolo non inizia con "PNRR - ", aggiungi il prefisso
+            if (substr($title, 0, 7) !== 'PNRR - ') {
+                $title = 'PNRR - ' . $title;
+            }
+            
+            // Salva anche la versione senza prefisso
+            $clean_title = pnrr_remove_title_prefix($title);
+            
+            // Aggiorna i dati con il titolo elaborato
+            $clone_data['title'] = $title;
+            $clone_data['clean_title'] = $clean_title;
         }
         
         // Genera automaticamente lo slug se non presente o vuoto
@@ -291,6 +348,22 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         $clone_data['enabled'] = true;
         $clone_data['clone_uuid'] = 'pnrr_' . uniqid();
         $clone_data['last_updated'] = current_time('mysql');
+        
+        // Sanitizza i campi in modo sicuro preservando l'HTML valido
+        if (isset($clone_data['address'])) {
+            $clone_data['address'] = wp_kses_post($clone_data['address']);
+        }
+        if (isset($clone_data['contacts'])) {
+            $clone_data['contacts'] = wp_kses_post($clone_data['contacts']);
+        }
+        if (isset($clone_data['other_info'])) {
+            $clone_data['other_info'] = wp_kses_post($clone_data['other_info']);
+        }
+        
+        // Rimuoviamo il campo footer_text se presente poiché non è più utilizzato
+        if (isset($clone_data['footer_text'])) {
+            unset($clone_data['footer_text']);
+        }
         
         $clones_data[] = $clone_data;
     }
@@ -318,7 +391,7 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         'success' => true
     ];
     
-    // Se richiesto, crea le pagine clone
+    // Se richiesto, crea le pagine clone - passa subito i dati ai shortcode
     if ($create_pages) {
         $source_page = $clone_manager->get_master_page();
         if (is_wp_error($source_page)) {
@@ -330,6 +403,18 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
             
             foreach ($clones_data as $index => $clone_data) {
                 $result = $clone_manager->clone_single_page($source_page, $clone_data);
+                
+                // Salva immediatamente i meta per ogni nuovo clone
+                if (!is_wp_error($result) && is_numeric($result)) {
+                    update_post_meta($result, '_pnrr_title', $clone_data['title'] ?? '');
+                    update_post_meta($result, '_pnrr_clean_title', $clone_data['clean_title'] ?? ''); // Salva il titolo pulito
+                    update_post_meta($result, '_pnrr_logo_url', $clone_data['logo_url'] ?? '');
+                    update_post_meta($result, '_pnrr_home_url', $clone_data['home_url'] ?? '');
+                    update_post_meta($result, '_pnrr_address', $clone_data['address'] ?? '');
+                    update_post_meta($result, '_pnrr_contacts', $clone_data['contacts'] ?? '');
+                    update_post_meta($result, '_pnrr_other_info', $clone_data['other_info'] ?? '');
+                }
+                
                 if (is_wp_error($result)) {
                     $errors[] = $result->get_error_message();
                 } else {
@@ -379,18 +464,27 @@ function pnrr_export_clones_csv() {
     $filename = 'pnrr-clones-export-' . date('Y-m-d-His') . '.csv';
     $filepath = $export_dir . '/' . $filename;
 
-    $csv_handle = fopen($filepath, 'w');
+    // Aggiungi BOM UTF-8 all'inizio del file per supporto corretto dei caratteri
+    file_put_contents($filepath, "\xEF\xBB\xBF");
+    
+    $csv_handle = fopen($filepath, 'a');
 
     // Usa lo stesso delimitatore dell'import per coerenza
     $delimiter = ';';
     
     // Scrivi intestazioni con le nuove colonne
-    fputcsv($csv_handle, ['Nome', 'Logo (url)', 'Url sito', 'Indirizzo (testo)', 'Contatti (testo)', 'Altro (testo)'], $delimiter);
+    fputcsv($csv_handle, ['Nome', 'Logo (url)', 'Url sito', 'Indirizzo (testo)', 'Contatti (testo)', 'Altre informazioni'], $delimiter, '"');
 
     // Scrivi dati
     foreach ($clones as $clone) {
+        // Per l'esportazione, rimuovi il prefisso "PNRR - " se presente nel titolo
+        $title = isset($clone['title']) ? $clone['title'] : '';
+        if (substr($title, 0, 7) === 'PNRR - ') {
+            $title = substr($title, 7);
+        }
+        
         $row = [
-            isset($clone['title']) ? $clone['title'] : '',
+            $title,
             isset($clone['logo_url']) ? $clone['logo_url'] : '',
             isset($clone['home_url']) ? $clone['home_url'] : '',
             isset($clone['address']) ? $clone['address'] : '',
@@ -398,7 +492,7 @@ function pnrr_export_clones_csv() {
             isset($clone['other_info']) ? $clone['other_info'] : ''
         ];
 
-        fputcsv($csv_handle, $row, $delimiter);
+        fputcsv($csv_handle, $row, $delimiter, '"');
     }
 
     fclose($csv_handle);

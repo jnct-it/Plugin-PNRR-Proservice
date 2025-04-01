@@ -50,8 +50,6 @@ class PNRR_Admin {
         $this->ajax_handler = new PNRR_Admin_Ajax();
         $this->display_handler = new PNRR_Admin_Display();
         
-        // Mantiene la compatibilità con il passato delegando metodi all'handler main
-        add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         
         // Delega le chiamate AJAX all'handler specifico

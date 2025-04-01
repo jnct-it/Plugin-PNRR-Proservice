@@ -47,6 +47,16 @@ class PNRR_Admin_Display {
     }
     
     /**
+     * Visualizza la pagina dashboard del plugin
+     */
+    public function display_dashboard() {
+        // Dopo la visualizzazione principale, aggiungiamo le istruzioni per gli shortcode
+        if (file_exists(PNRR_PLUGIN_DIR . 'admin/partials/shortcode-instructions.php')) {
+            include PNRR_PLUGIN_DIR . 'admin/partials/shortcode-instructions.php';
+        }
+    }
+    
+    /**
      * Renderizza il contenuto della tabella dei cloni
      * 
      * @param array $clones Dati dei cloni
@@ -72,12 +82,18 @@ class PNRR_Admin_Display {
             if ($is_deleted && !$show_deleted) {
                 continue;
             }
+            
+            // Visualizza il titolo senza il prefisso nella tabella di amministrazione utilizzando la funzione centralizzata
+            $display_title = pnrr_remove_title_prefix($clone['title']);
             ?>
-            <tr data-id="<?php echo esc_attr($index); ?>" class="<?php echo esc_attr($row_class); ?>">
+            <tr data-id="<?php echo esc_attr($index); ?>" class="<?php echo esc_attr($row_class); ?>"
+                data-address="<?php echo esc_attr(isset($clone['address']) ? $clone['address'] : ''); ?>"
+                data-contacts="<?php echo esc_attr(isset($clone['contacts']) ? $clone['contacts'] : ''); ?>"
+                data-other-info="<?php echo esc_attr(isset($clone['other_info']) ? $clone['other_info'] : ''); ?>">
                 <td><?php echo esc_html($clone['slug']); ?></td>
                 <td>
                     <?php 
-                    echo esc_html($clone['title']); 
+                    echo esc_html($display_title); 
                     if ($is_discovered) {
                         echo ' <span class="discovery-badge" title="Scoperta durante sincronizzazione">🔍</span>';
                     }
@@ -101,8 +117,9 @@ class PNRR_Admin_Display {
                 </td>
                 <td>
                     <?php 
-                    if (!empty($clone['footer_text'])) {
-                        $excerpt = wp_strip_all_tags($clone['footer_text']);
+                    // Mostra l'indirizzo
+                    if (!empty($clone['address'])) {
+                        $excerpt = wp_strip_all_tags($clone['address']);
                         echo esc_html(substr($excerpt, 0, 50)) . (strlen($excerpt) > 50 ? '...' : '');
                     } else {
                         echo '<span class="not-set">-</span>';
@@ -169,3 +186,4 @@ class PNRR_Admin_Display {
         echo '</div>';
     }
 }
+?>

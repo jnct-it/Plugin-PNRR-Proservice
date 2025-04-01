@@ -328,182 +328,70 @@ Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1
         
         <!-- Sezione per la visualizzazione dei dati dei cloni -->
         <div class="pnrr-data-section">
-            <div class="pnrr-data-section-header">
-                <h2>Gestione Dati Clone</h2>
-                <div class="pnrr-data-actions">
-                    <button id="pnrr-sync-button" class="button button-secondary">
-                        <span class="dashicons dashicons-update"></span> Sincronizza dati
-                    </button>
-                    
-                    <div class="sync-options">
-                        <label>
-                            <input type="checkbox" id="sync-remove-option" name="sync_remove_option" value="1">
-                            Rimuovi dati dei cloni eliminati
-                        </label>
+            <h2>Gestione dati Cloni</h2>
+            
+            <div class="pnrr-table-wrapper">
+                <div class="pnrr-table-controls">
+                    <div class="pnrr-table-filters">
+                        <input type="text" id="pnrr-search-input" placeholder="Cerca..." class="search-input">
+                        <button type="button" id="pnrr-search-clear" class="button">Cancella</button>
+                        
+                        <div class="table-length-wrapper">
+                            <label for="pnrr-table-length">Mostra:</label>
+                            <select id="pnrr-table-length">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        
+                        <div class="show-deleted-wrapper">
+                            <input type="checkbox" id="show-deleted-clones" name="show_deleted" <?php echo isset($_COOKIE['pnrr_show_deleted_clones']) && $_COOKIE['pnrr_show_deleted_clones'] === 'true' ? 'checked' : ''; ?>>
+                            <label for="show-deleted-clones">Mostra cloni eliminati</label>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div id="pnrr-sync-progress" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-bar-fill" style="width: 0%;"></div>
-                </div>
-                <div class="progress-status">Sincronizzazione in corso...</div>
-            </div>
-            
-            <div id="pnrr-sync-feedback" style="display: none;"></div>
-            
-            <div class="pnrr-table-controls">
-                <div class="table-search">
-                    <input type="text" id="pnrr-search-input" placeholder="Cerca..." class="regular-text">
-                    <button type="button" id="pnrr-search-clear" class="button">Cancella</button>
-                </div>
-                <div class="table-filters">
-                    <label class="show-deleted-checkbox">
-                        <input type="checkbox" id="show-deleted-clones" name="show_deleted_clones">
-                        Mostra cloni eliminati
-                    </label>
-                </div>
-                <div class="table-length">
-                    <label>
-                        Mostra 
-                        <select id="pnrr-table-length">
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="-1">Tutti</option>
-                        </select>
-                        elementi
-                    </label>
-                </div>
-            </div>
-            
-            <div class="pnrr-table-container">
-                <table id="pnrr-clones-table" class="wp-list-table widefat fixed striped">
+                
+                <table id="pnrr-clones-table" class="widefat striped">
                     <thead>
                         <tr>
                             <th class="sortable" data-sort="slug">Slug</th>
                             <th class="sortable" data-sort="title">Titolo</th>
-                            <th class="sortable" data-sort="home_url">Home URL</th>
-                            <th class="sortable" data-sort="logo_url">Logo URL</th>
-                            <th>Footer</th>
-                            <th class="sortable" data-sort="status">Stato</th>
-                            <th class="no-sort">Azioni</th>
+                            <th class="sortable" data-sort="home_url">URL Sito</th>
+                            <th class="sortable" data-sort="logo_url">Logo</th>
+                            <th>Indirizzo</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
-                        // Recupera l'impostazione utente dai cookie (default: non mostrare eliminati)
-                        $show_deleted = isset($_COOKIE['pnrr_show_deleted_clones']) ? 
-                            filter_var($_COOKIE['pnrr_show_deleted_clones'], FILTER_VALIDATE_BOOLEAN) : false;
-                        
-                        // Carica i dati filtrati
-                        $all_clones = $clone_manager->get_clone_data(false, $show_deleted);
-                        
-                        if (empty($all_clones)) : 
-                        ?>
-                        <tr>
-                            <td colspan="7" class="no-items">Nessun dato clone disponibile.</td>
-                        </tr>
-                        <?php else : ?>
-                            <?php foreach ($all_clones as $index => $clone) : 
-                                $is_deleted = isset($clone['status']) && $clone['status'] === 'deleted';
-                                $is_disabled = isset($clone['enabled']) && !$clone['enabled'];
-                                $is_discovered = isset($clone['discovered']) && $clone['discovered'];
-                                
-                                $row_class = $is_deleted ? 'deleted' : ($is_disabled ? 'disabled' : '');
-                                if ($is_discovered) {
-                                    $row_class .= ' discovered';
-                                }
-                            ?>
-                            <tr data-id="<?php echo esc_attr($index); ?>" class="<?php echo esc_attr($row_class); ?>">
-                                <td><?php echo esc_html($clone['slug']); ?></td>
-                                <td>
-                                    <?php 
-                                    echo esc_html($clone['title']); 
-                                    if ($is_discovered) {
-                                        echo ' <span class="discovery-badge" title="Scoperta durante sincronizzazione">🔍</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php if (!empty($clone['home_url'])) : ?>
-                                    <a href="<?php echo esc_url($clone['home_url']); ?>" target="_blank"><?php echo esc_html($clone['home_url']); ?></a>
-                                    <?php else : ?>
-                                    <span class="not-set">-</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if (!empty($clone['logo_url'])) : ?>
-                                    <a href="<?php echo esc_url($clone['logo_url']); ?>" target="_blank" class="image-preview-link" data-image="<?php echo esc_url($clone['logo_url']); ?>">
-                                        <span class="dashicons dashicons-format-image"></span> Anteprima
-                                    </a>
-                                    <?php else : ?>
-                                    <span class="not-set">-</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php 
-                                    if (!empty($clone['footer_text'])) {
-                                        $excerpt = wp_strip_all_tags($clone['footer_text']);
-                                        echo esc_html(substr($excerpt, 0, 50)) . (strlen($excerpt) > 50 ? '...' : '');
-                                    } else {
-                                        echo '<span class="not-set">-</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php if ($is_deleted) : ?>
-                                        <span class="status-indicator deleted">
-                                            Eliminato
-                                        </span>
-                                    <?php else : ?>
-                                        <span class="status-indicator <?php echo isset($clone['enabled']) && $clone['enabled'] ? 'active' : 'inactive'; ?>">
-                                            <?php echo isset($clone['enabled']) && $clone['enabled'] ? 'Attivo' : 'Inattivo'; ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="actions">
-                                    <button type="button" class="button edit-clone" data-id="<?php echo esc_attr($index); ?>" <?php echo $is_deleted ? 'disabled' : ''; ?>>
-                                        <span class="dashicons dashicons-edit"></span>
-                                    </button>
-                                    <?php if (!$is_deleted) : ?>
-                                    <button type="button" class="button toggle-clone" data-id="<?php echo esc_attr($index); ?>">
-                                        <?php if (isset($clone['enabled']) && $clone['enabled']) : ?>
-                                        <span class="dashicons dashicons-hidden"></span>
-                                        <?php else : ?>
-                                        <span class="dashicons dashicons-visibility"></span>
-                                        <?php endif; ?>
-                                    </button>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                        <?php $this->render_clones_table($clone_manager->get_clone_data(false, isset($_COOKIE['pnrr_show_deleted_clones']) && $_COOKIE['pnrr_show_deleted_clones'] === 'true')); ?>
                     </tbody>
                 </table>
-            </div>
-            
-            <div class="pnrr-table-pagination">
-                <div class="tablenav-pages">
+                
+                <div class="pnrr-table-pagination">
                     <span class="displaying-num"></span>
-                    <span class="pagination-links">
-                        <button type="button" class="button first-page" aria-label="Prima pagina">
-                            <span class="dashicons dashicons-controls-skipback"></span>
-                        </button>
-                        <button type="button" class="button prev-page" aria-label="Pagina precedente">
-                            <span class="dashicons dashicons-controls-back"></span>
-                        </button>
-                        <span class="paging-input">
-                            Pagina <span class="current-page">1</span> di <span class="total-pages">0</span>
+                    <div class="tablenav-pages">
+                        <span class="pagination-links">
+                            <button class="button first-page" aria-label="Vai alla prima pagina" disabled>
+                                <span class="dashicons dashicons-controls-skipback"></span>
+                            </button>
+                            <button class="button prev-page" aria-label="Vai alla pagina precedente" disabled>
+                                <span class="dashicons dashicons-controls-back"></span>
+                            </button>
+                            <span class="paging-input">
+                                <span class="current-page">1</span> di
+                                <span class="total-pages">1</span>
+                            </span>
+                            <button class="button next-page" aria-label="Vai alla pagina successiva">
+                                <span class="dashicons dashicons-controls-forward"></span>
+                            </button>
+                            <button class="button last-page" aria-label="Vai all'ultima pagina">
+                                <span class="dashicons dashicons-controls-skipforward"></span>
+                            </button>
                         </span>
-                        <button type="button" class="button next-page" aria-label="Pagina successiva">
-                            <span class="dashicons dashicons-controls-forward"></span>
-                        </button>
-                        <button type="button" class="button last-page" aria-label="Ultima pagina">
-                            <span class="dashicons dashicons-controls-skipforward"></span>
-                        </button>
-                    </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -522,92 +410,68 @@ Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1
         </div>
         
         <!-- Modal per la modifica del clone -->
-        <div id="edit-clone-modal" class="pnrr-modal" style="display: none;">
+        <div id="edit-clone-modal" class="pnrr-modal">
             <div class="pnrr-modal-content">
-                <div class="pnrr-modal-header">
-                    <h3>Modifica Clone</h3>
-                    <span class="pnrr-modal-close">&times;</span>
-                </div>
-                <div class="pnrr-modal-body">
-                    <form id="edit-clone-form">
-                        <input type="hidden" id="edit-clone-id" name="clone_id" value="">
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-slug">Slug:</label>
-                            <input type="text" id="edit-clone-slug" name="slug" class="regular-text" required>
-                            <p class="description">Identificativo univoco per la pagina.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-title">Nome/Titolo:</label>
-                            <input type="text" id="edit-clone-title" name="title" class="regular-text" required>
-                            <p class="description">Titolo visibile della pagina.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-home-url">URL sito:</label>
-                            <input type="url" id="edit-clone-home-url" name="home_url" class="regular-text">
-                            <p class="description">URL del sito esterno.</p>
-                        </div>
-                        
-                        <div class="form-field media-field">
-                            <label for="edit-clone-logo-url">Logo:</label>
-                            <div class="media-input-wrapper">
-                                <input type="url" id="edit-clone-logo-url" name="logo_url" class="regular-text" readonly>
-                                <button type="button" class="button select-media-button" id="select-logo-button">
-                                    <span class="dashicons dashicons-format-image"></span> Seleziona immagine
-                                </button>
-                                <button type="button" class="button remove-media-button" id="remove-logo-button">
-                                    <span class="dashicons dashicons-no"></span> Rimuovi
-                                </button>
-                            </div>
-                            <div class="image-preview">
-                                <img id="logo-preview" src="" alt="" style="max-width: 150px; max-height: 150px; display: none;">
-                            </div>
-                            <p class="description">Logo che verrà mostrato nella pagina clone.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-address">Indirizzo:</label>
-                            <textarea id="edit-clone-address" name="address" rows="2" class="large-text"></textarea>
-                            <p class="description">Indirizzo fisico dell'ente.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-contacts">Contatti:</label>
-                            <textarea id="edit-clone-contacts" name="contacts" rows="2" class="large-text"></textarea>
-                            <p class="description">Informazioni di contatto (email, telefono, ecc.).</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-other-info">Altre informazioni:</label>
-                            <textarea id="edit-clone-other-info" name="other_info" rows="2" class="large-text"></textarea>
-                            <p class="description">Altre informazioni utili.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-footer-text">Testo Footer:</label>
-                            <textarea id="edit-clone-footer-text" name="footer_text" rows="3" class="large-text"></textarea>
-                            <p class="description">È possibile utilizzare HTML per formattare il testo del footer.</p>
-                        </div>
-                        
-                        <div class="form-field">
-                            <label for="edit-clone-enabled">Stato:</label>
-                            <select id="edit-clone-enabled" name="enabled">
-                                <option value="1">Attivo</option>
-                                <option value="0">Inattivo</option>
-                            </select>
-                            <p class="description">Se impostato su inattivo, il clone non verrà generato durante la clonazione.</p>
-                        </div>
-                    </form>
-                </div>
-                <div class="pnrr-modal-footer">
-                    <div class="spinner-container">
-                        <span class="spinner" id="edit-clone-spinner"></span>
+                <span class="pnrr-modal-close">&times;</span>
+                <h2>Modifica Clone</h2>
+                <form id="edit-clone-form">
+                    <input type="hidden" id="edit-clone-id" name="clone_id" value="">
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-slug">Slug:</label>
+                        <input type="text" id="edit-clone-slug" name="slug" required>
                     </div>
-                    <button type="button" id="save-clone-button" class="button button-primary">Salva Modifiche</button>
-                    <button type="button" class="pnrr-modal-close button">Annulla</button>
-                </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-title">Titolo:</label>
+                        <input type="text" id="edit-clone-title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-home-url">URL Home:</label>
+                        <input type="url" id="edit-clone-home-url" name="home_url">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-logo-url">URL Logo:</label>
+                        <div class="logo-selector">
+                            <input type="url" id="edit-clone-logo-url" name="logo_url">
+                            <button type="button" id="select-logo-button" class="button">Seleziona Logo</button>
+                            <button type="button" id="remove-logo-button" class="button" style="display:none;">Rimuovi</button>
+                        </div>
+                        <div class="logo-preview">
+                            <img id="logo-preview" src="" alt="Anteprima Logo" style="display:none; max-width:200px; margin-top:10px;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-address">Indirizzo:</label>
+                        <textarea id="edit-clone-address" name="address" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-contacts">Contatti:</label>
+                        <textarea id="edit-clone-contacts" name="contacts" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-other-info">Altre Informazioni:</label>
+                        <textarea id="edit-clone-other-info" name="other_info" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-clone-enabled">Stato:</label>
+                        <select id="edit-clone-enabled" name="enabled">
+                            <option value="1">Attivo</option>
+                            <option value="0">Inattivo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <span id="edit-clone-spinner" class="spinner"></span>
+                        <button type="button" id="save-clone-button" class="button button-primary">Salva Modifiche</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

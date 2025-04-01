@@ -291,9 +291,14 @@ class PNRR_Admin_Ajax {
         // Ottieni i dati inviati
         parse_str($_POST['data'], $clone_data);
         
+        // Debug - Log dei dati ricevuti
+        if (function_exists('pnrr_debug_log')) {
+            pnrr_debug_log("Aggiornamento clone - Dati ricevuti: " . print_r($clone_data, true));
+        }
+        
         // Validazione campi obbligatori
         if (!isset($clone_data['clone_id']) || !isset($clone_data['slug']) || !isset($clone_data['title'])) {
-            wp_send_json_error(array('message' => 'Dati incompleti. I campi obbligatori sono mancanti.'));
+            wp_send_json_error(array('message' => 'Dati mancanti o incompleti'));
             return;
         }
         
@@ -301,7 +306,7 @@ class PNRR_Admin_Ajax {
         
         global $pnrr_plugin;
         if (!isset($pnrr_plugin['clone_manager']) || !is_object($pnrr_plugin['clone_manager'])) {
-            wp_send_json_error(array('message' => 'Gestore dei cloni non disponibile'));
+            wp_send_json_error(array('message' => 'Gestore cloni non disponibile'));
             return;
         }
         
@@ -310,46 +315,65 @@ class PNRR_Admin_Ajax {
         // Validazione aggiuntiva dello slug (deve essere unico)
         $existing_clones = $clone_manager->get_clone_data();
         foreach ($existing_clones as $index => $clone) {
-            // Ignora l'attuale clone in fase di modifica
-            if ($index === $clone_index) {
-                continue;
-            }
-            if ($clone['slug'] === sanitize_title($clone_data['slug'])) {
-                wp_send_json_error(array('message' => 'Lo slug è già in uso da un altro clone. Scegli uno slug unico.'));
+            if ($index !== $clone_index && $clone['slug'] === $clone_data['slug']) {
+                wp_send_json_error(array('message' => 'Lo slug è già utilizzato da un altro clone'));
                 return;
             }
         }
         
         // Prepara i dati aggiornati con sanitizzazione
+        $title = sanitize_text_field($clone_data['title']);
+        $clean_title = $title;
+        
+        // Rimuovi prefisso se presente o aggiungilo se mancante
+        if (substr($title, 0, 7) !== 'PNRR - ') {
+            $title = 'PNRR - ' . $title;
+            $clean_title = substr($title, 7);
+        } else {
+            $clean_title = substr($title, 7);
+        }
+        
         $update_data = array(
             'slug' => sanitize_title($clone_data['slug']),
-            'title' => sanitize_text_field($clone_data['title']),
+            'title' => $title,
+            'clean_title' => $clean_title, // Salva la versione pulita
             'home_url' => esc_url_raw($clone_data['home_url']),
             'logo_url' => esc_url_raw($clone_data['logo_url']),
-            'footer_text' => wp_kses_post($clone_data['footer_text']),
-            'enabled' => isset($clone_data['enabled']) && intval($clone_data['enabled']) === 1,
+            'address' => wp_kses_post($clone_data['address']),
+            'contacts' => wp_kses_post($clone_data['contacts']),
+            'other_info' => wp_kses_post($clone_data['other_info']),
+            'enabled' => $clone_data['enabled'] === '1',
             'last_updated' => current_time('mysql')
         );
+        
+        // Debug - Log dei dati preparati per l'aggiornamento
+        if (function_exists('pnrr_debug_log')) {
+            pnrr_debug_log("Aggiornamento clone - Dati preparati: " . print_r($update_data, true));
+        }
+        
+        // Se esiste una pagina associata a questo clone, aggiorna anche i suoi meta
+        $clone_info = isset($existing_clones[$clone_index]) ? $existing_clones[$clone_index] : null;
+        if ($clone_info && isset($clone_info['page_id'])) {
+            $page_id = $clone_info['page_id'];
+            update_post_meta($page_id, '_pnrr_title', $update_data['title']);
+            update_post_meta($page_id, '_pnrr_clean_title', $update_data['clean_title']); // Salva il titolo pulito
+            update_post_meta($page_id, '_pnrr_logo_url', $update_data['logo_url']);
+            update_post_meta($page_id, '_pnrr_home_url', $update_data['home_url']);
+            update_post_meta($page_id, '_pnrr_address', $update_data['address']);
+            update_post_meta($page_id, '_pnrr_contacts', $update_data['contacts']);
+            update_post_meta($page_id, '_pnrr_other_info', $update_data['other_info']);
+        }
         
         // Aggiorna i dati
         $result = $clone_manager->update_clone_data($clone_index, $update_data);
         
         if ($result) {
-            // Registra l'aggiornamento nei log se disponibile
-            if (method_exists($pnrr_plugin['core'], 'log_action')) {
-                $pnrr_plugin['core']->log_action(
-                    'update_clone',
-                    $clone_index,
-                    $update_data['title']
-                );
-            }
             wp_send_json_success(array(
                 'message' => 'Clone aggiornato con successo',
-                'clone_id' => $clone_index,
-                'data' => $update_data
+                'updated_data' => $update_data
             ));
         } else {
-            wp_send_json_error(array('message' => 'Errore durante l\'aggiornamento del clone'));
+            wp_send_json_error(array('message' => 'Errore durante l\'aggiornamento dei dati'));
         }
     }
     

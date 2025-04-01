@@ -59,6 +59,7 @@ function pnrr_load_core_classes() {
     // Carica i file helper
     require_once PNRR_PLUGIN_DIR . 'helpers/import-export.php';
     require_once PNRR_PLUGIN_DIR . 'helpers/elementor-helper.php';
+    require_once PNRR_PLUGIN_DIR . 'helpers/shortcodes.php';
     
     // Carica il file di debug se WP_DEBUG è attivato
     if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -181,3 +182,74 @@ function pnrr_create_required_directories() {
         }
     }
 }
+
+/**
+ * Rimuove il prefisso "PNRR -" da un titolo
+ * 
+ * @param string $title Il titolo da elaborare
+ * @return string Il titolo senza prefisso
+ */
+function pnrr_remove_title_prefix($title) {
+    if (substr($title, 0, 7) === 'PNRR - ') {
+        return substr($title, 7);
+    }
+    return $title;
+}
+
+/**
+ * Filtro per rimuovere il prefisso "PNRR - " dai titoli delle pagine
+ */
+function pnrr_filter_page_title($title, $post_id = null) {
+    // Non modificare titoli nell'admin
+    if (is_admin()) {
+        return $title;
+    }
+    
+    // Se non abbiamo un ID, otteniamo quello corrente
+    if (!$post_id) {
+        $post_id = get_the_ID();
+    }
+    
+    // Verifica se è una pagina clone
+    $clone_uuid = get_post_meta($post_id, '_pnrr_clone_uuid', true);
+    if (!empty($clone_uuid)) {
+        // Controlla se esiste un titolo pulito personalizzato
+        $clean_title = get_post_meta($post_id, '_pnrr_clean_title', true);
+        if (!empty($clean_title)) {
+            return $clean_title;
+        }
+    }
+    
+    // Rimozione generica del prefisso per qualsiasi titolo
+    return pnrr_remove_title_prefix($title);
+}
+
+// Applica il filtro per i titoli in vari contesti
+add_filter('the_title', 'pnrr_filter_page_title', 10, 2);
+add_filter('single_post_title', 'pnrr_filter_page_title', 10, 2);
+add_filter('wp_title', 'pnrr_filter_page_title', 10, 2);
+
+/**
+ * Filtro per document_title_parts
+ *
+ * @param array $title_parts Parti del titolo del documento
+ * @return array Parti del titolo modificate
+ */
+function pnrr_filter_document_title_parts($title_parts) {
+    if (!is_admin() && isset($title_parts['title'])) {
+        $title_parts['title'] = pnrr_remove_title_prefix($title_parts['title']);
+    }
+    return $title_parts;
+}
+
+/**
+ * Filtro per il contenuto generato da Elementor
+ */
+function pnrr_filter_elementor_content($content) {
+    // Cerca e sostituisci esplicitamente "PNRR - " nel contenuto
+    $content = str_replace('">[PNRR - ', '">', $content);
+    $content = str_replace('">PNRR - ', '">', $content);
+    
+    return $content;
+}
+add_filter('the_content', 'pnrr_filter_elementor_content');

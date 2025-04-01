@@ -75,6 +75,8 @@ function initMediaSelector($) {
         var cloneId = $(this).data('id');
         var $row = $('tr[data-id="' + cloneId + '"]');
         
+        console.log("Apertura modale per il clone ID:", cloneId); // Debug
+        
         // Popola il form con i dati del clone
         $('#edit-clone-id').val(cloneId);
         $('#edit-clone-slug').val($row.find('td:eq(0)').text().trim());
@@ -103,27 +105,21 @@ function initMediaSelector($) {
         }
         $('#edit-clone-logo-url').val(logoUrl);
         
-        // Footer Text - Recupera il valore completo dal data attribute
-        var footerText = $row.data('footer-text') || '';
-        if (!footerText) {
-            // Se non è nell'attributo, prendiamo il testo della cella (potrebbe essere troncato)
-            footerText = $row.find('td:eq(4)').text().trim();
-            if (footerText === '-') footerText = '';
-        }
-        $('#edit-clone-footer-text').val(footerText);
+        // Campi aggiuntivi
+        // Estrai i valori direttamente dagli attributi data
+        var address = $row.attr('data-address') || '';
+        var contacts = $row.attr('data-contacts') || '';
+        var otherInfo = $row.attr('data-other-info') || '';
         
-        // Campi aggiuntivi (se presenti)
-        if ($('#edit-clone-address').length) {
-            $('#edit-clone-address').val($row.data('address') || '');
-        }
+        console.log("Debug - Attributi data recuperati:");
+        console.log("data-address:", $row.attr('data-address'));
+        console.log("data-contacts:", $row.attr('data-contacts'));
+        console.log("data-other-info:", $row.attr('data-other-info'));
         
-        if ($('#edit-clone-contacts').length) {
-            $('#edit-clone-contacts').val($row.data('contacts') || '');
-        }
-        
-        if ($('#edit-clone-other-info').length) {
-            $('#edit-clone-other-info').val($row.data('other-info') || '');
-        }
+        // Popola i campi
+        $('#edit-clone-address').val(address);
+        $('#edit-clone-contacts').val(contacts);
+        $('#edit-clone-other-info').val(otherInfo);
         
         // Stato
         var isEnabled = $row.find('.status-indicator').hasClass('active');
@@ -210,16 +206,19 @@ function initMediaSelector($) {
                     }
                     
                     // Aggiorna campi aggiuntivi nei data attributes
-                    if ($('#edit-clone-address').length) {
-                        $row.data('address', $('#edit-clone-address').val());
-                    }
+                    $row.attr('data-address', $('#edit-clone-address').val());
+                    $row.attr('data-contacts', $('#edit-clone-contacts').val());
+                    $row.attr('data-other-info', $('#edit-clone-other-info').val());
                     
-                    if ($('#edit-clone-contacts').length) {
-                        $row.data('contacts', $('#edit-clone-contacts').val());
-                    }
-                    
-                    if ($('#edit-clone-other-info').length) {
-                        $row.data('other-info', $('#edit-clone-other-info').val());
+                    // Aggiorna la visualizzazione dell'indirizzo nella tabella
+                    var address = $('#edit-clone-address').val();
+                    var $addressCell = $row.find('td:eq(4)');
+                    if (address) {
+                        var excerpt = $('<div>').html(address).text();
+                        excerpt = excerpt.length > 50 ? excerpt.substring(0, 50) + '...' : excerpt;
+                        $addressCell.text(excerpt);
+                    } else {
+                        $addressCell.html('<span class="not-set">-</span>');
                     }
                     
                     // Aggiorna stato

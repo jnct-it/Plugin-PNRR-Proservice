@@ -377,4 +377,123 @@ class PNRR_Clone {
         
         return $result;
     }
+    
+    /**
+     * Crea un clone di una pagina
+     * 
+     * @param WP_Post $source_page Oggetto pagina da clonare
+     * @param array $clone_data Dati del clone (slug, title, ecc.)
+     * @return int|WP_Error ID della nuova pagina o errore
+     */
+    public function clone_page($source_page, $clone_data) {
+        // Aggiungi il prefisso "PNRR - " al titolo della pagina
+        $page_title = 'PNRR - ' . $clone_data['title'];
+        
+        // Crea il post della nuova pagina
+        $new_page_id = wp_insert_post(array(
+            'post_title'     => $page_title,
+            'post_name'      => $clone_data['slug'],
+            'post_content'   => $source_page->post_content,
+            'post_status'    => 'publish',
+            'post_type'      => 'page',
+            'post_author'    => $source_page->post_author,
+            'post_parent'    => 0
+        ));
+        
+        // Debug - Log dei dati del clone durante la creazione della pagina
+        if (function_exists('pnrr_debug_log')) {
+            pnrr_debug_log("Creazione clone - Dati clone: " . print_r($clone_data, true));
+        }
+        
+        // Clona i dati di Elementor
+        $elementor_handler = new PNRR_Elementor_Handler();
+        $elementor_result = $elementor_handler->duplicate_elementor_data($source_page->ID, $new_page_id, $clone_data);
+        
+        // Salva i metadati personalizzati per la pagina clone
+        update_post_meta($new_page_id, '_pnrr_clone_uuid', $clone_data['clone_uuid'] ?? 'pnrr_' . uniqid());
+        update_post_meta($new_page_id, '_pnrr_title', $clone_data['title'] ?? '');
+        update_post_meta($new_page_id, '_pnrr_logo_url', $clone_data['logo_url'] ?? '');
+        update_post_meta($new_page_id, '_pnrr_home_url', $clone_data['home_url'] ?? '');
+        
+        // Salva i campi con la formattazione preservata
+        update_post_meta($new_page_id, '_pnrr_address', $clone_data['address'] ?? '');
+        update_post_meta($new_page_id, '_pnrr_contacts', $clone_data['contacts'] ?? '');
+        update_post_meta($new_page_id, '_pnrr_other_info', $clone_data['other_info'] ?? '');
+        
+        // Salva anche tutti i dati del clone come array
+        update_post_meta($new_page_id, '_pnrr_clone_data', $clone_data);
+        
+        // Salva i metadati personalizzati nella nuova pagina
+        $custom_meta_keys = [
+            'logo_url' => '_pnrr_logo_url',
+            'home_url' => '_pnrr_home_url',
+            'address' => '_pnrr_address',
+            'contacts' => '_pnrr_contacts',
+            'other_info' => '_pnrr_other_info',
+            'clone_uuid' => '_pnrr_clone_uuid'
+        ];
+        
+        foreach ($custom_meta_keys as $data_key => $meta_key) {
+            if (isset($clone_data[$data_key])) {
+                // Importante: non applicare sanitize_text_field ai campi che potrebbero contenere HTML o multilinea
+                if (in_array($data_key, ['address', 'contacts', 'other_info'])) {
+                    update_post_meta($new_page_id, $meta_key, wp_kses_post($clone_data[$data_key]));
+                } else {
+                    update_post_meta($new_page_id, $meta_key, sanitize_text_field($clone_data[$data_key]));
+                }
+            }
+        }
+        
+        // Salva i dati del clone come meta nella pagina clone
+        $this->save_clone_metadata($new_page_id, $clone_data);
+        
+        // Aggiorna il dato page_id nel clone
+        $prepared_data = $this->prepare_clone_data($clone_data);
+        $prepared_data['page_id'] = $new_page_id;
+        
+        // Aggiorna o aggiungi i dati del clone nell'elenco completo
+        $this->data_manager->update_clone_in_list($prepared_data);
+        
+        return $new_page_id;
+    }
+    
+    /**
+     * Aggiorna una pagina clonata con nuovi dati
+     * 
+     * @param int $page_id ID della pagina clone
+     * @param array $clone_data Dati del clone
+     */
+    public function update_clone_page($page_id, $clone_data) {
+        // Aggiorna i metadati personalizzati
+        update_post_meta($page_id, '_pnrr_title', $clone_data['title'] ?? '');
+        update_post_meta($page_id, '_pnrr_logo_url', $clone_data['logo_url'] ?? '');
+        update_post_meta($page_id, '_pnrr_home_url', $clone_data['home_url'] ?? '');
+        
+        // Aggiorna i campi con la formattazione preservata
+        update_post_meta($page_id, '_pnrr_address', $clone_data['address'] ?? '');
+        update_post_meta($page_id, '_pnrr_contacts', $clone_data['contacts'] ?? '');
+        update_post_meta($page_id, '_pnrr_other_info', $clone_data['other_info'] ?? '');
+        
+        // Aggiorna anche tutti i dati del clone come array
+        update_post_meta($page_id, '_pnrr_clone_data', $clone_data);
+    }
+    
+    /**
+     * Salva i metadati del clone nella pagina
+     * 
+     * @param int $page_id ID della pagina clone
+     * @param array $clone_data Dati del clone
+     */
+    private function save_clone_metadata($page_id, $clone_data) {
+        // Salva i dati come metadati nella pagina clone
+        if (isset($clone_data['title'])) update_post_meta($page_id, '_pnrr_title', sanitize_text_field($clone_data['title']));
+        if (isset($clone_data['logo_url'])) update_post_meta($page_id, '_pnrr_logo_url', esc_url_raw($clone_data['logo_url']));
+        if (isset($clone_data['home_url'])) update_post_meta($page_id, '_pnrr_home_url', esc_url_raw($clone_data['home_url']));
+        if (isset($clone_data['address'])) update_post_meta($page_id, '_pnrr_address', wp_kses_post($clone_data['address']));
+        if (isset($clone_data['contacts'])) update_post_meta($page_id, '_pnrr_contacts', wp_kses_post($clone_data['contacts']));
+        if (isset($clone_data['other_info'])) update_post_meta($page_id, '_pnrr_other_info', wp_kses_post($clone_data['other_info']));
+        
+        // Salva anche l'array completo per riferimento futuro
+        update_post_meta($page_id, '_pnrr_clone_data', $clone_data);
+    }
 }
