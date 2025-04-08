@@ -300,22 +300,7 @@ if (!empty($sync_results) && isset($sync_results['discovered']) && $sync_results
             </div>
             
             <div class="import-instructions">
-                <h3>Istruzioni</h3>
-                <p>Il file CSV deve avere le seguenti colonne:</p>
-                <ul>
-                    <li><strong>Nome</strong> - Titolo della pagina (obbligatorio)</li>
-                    <li><strong>Logo</strong> - URL dell'immagine del logo</li>
-                    <li><strong>Url</strong> - URL della home esterna</li>
-                    <li><strong>Indirizzo</strong> - Indirizzo fisico</li>
-                    <li><strong>Contatti</strong> - Informazioni di contatto</li>
-                    <li><strong>Altre</strong> - Informazioni aggiuntive</li>
-                </ul>
-                <p>Esempio:</p>
-                <pre>Nome,Logo,Url,Indirizzo,Contatti,Altre
-Comune di Roma,https://esempio.it/logo1.png,https://comune1.it,"Via del Corso 1, Roma","Tel: 06 1234567, Email: info@comune.roma.it","Orari: Lun-Ven 9-18"
-Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1, Milano","Tel: 02 1234567, Email: info@comune.milano.it","Orari: Lun-Ven 8-17"</pre>
-                
-                <p><strong>Nota:</strong> L'importazione sovrascriverà tutti i dati dei cloni esistenti.</p>
+                <?php include_once PNRR_PLUGIN_DIR . 'admin/partials/import-instructions.php'; ?>
             </div>
         </div>
         
@@ -377,7 +362,7 @@ Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1
                                 // Il problema è qui: stiamo usando l'oggetto sbagliato
                                 // Utilizza clone_manager invece di core per ottenere i cloni
                                 if (isset($pnrr_plugin['clone_manager']) && is_object($pnrr_plugin['clone_manager'])) {
-                                    $clones = $pnrr_plugin['clone_manager']->get_all_clones();
+                                    $clones = $pnrr_plugin['clone_manager']->get_clone_data();
                                     $display_handler->render_clones_table($clones, $show_deleted); 
                                 } else {
                                     echo '<tr><td colspan="8" class="no-items">Errore: Gestore cloni non disponibile.</td></tr>';

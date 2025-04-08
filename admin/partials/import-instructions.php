@@ -20,6 +20,6 @@
     
     <h4>Esempio CSV:</h4>
     <pre>Nome;Logo;Url;CUP;Indirizzo;Contatti;Altre
-"Comune di Roma";https://esempio.it/logo1.png;https://comune1.it;CUP123456789A;"Via del Corso 1, Roma";"Tel: 06 1234567, Email: info@comune.roma.it";"Orari: Lun-Ven 9-18"
-"Comune di Milano";https://esempio.it/logo2.png;https://comune2.it;CUP987654321B;"Piazza Duomo 1, Milano";"Tel: 02 1234567, Email: info@comune.milano.it";"Orari: Lun-Ven 8-17"</pre>
+"Comune di Roma";https://esempio.it/logo1.png;https://comune1.it;"CUP123456789A";"Via del Corso 1, Roma";"Tel: 06 1234567, Email: info@comune.roma.it";"Orari: Lun-Ven 9-18"
+"Comune di Milano";https://esempio.it/logo2.png;https://comune2.it;"CUP987654321B";"Piazza Duomo 1, Milano";"Tel: 02 1234567, Email: info@comune.milano.it";"Orari: Lun-Ven 8-17"</pre>
 </div>
