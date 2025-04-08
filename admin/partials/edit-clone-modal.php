@@ -37,6 +37,12 @@
                 </div>
                 
                 <div class="form-group">
+                    <label for="edit-clone-cup">CUP:</label>
+                    <input type="text" id="edit-clone-cup" name="cup" class="widefat" placeholder="Codice Unico di Progetto">
+                    <p class="description">Inserire il Codice Unico di Progetto.</p>
+                </div>
+                
+                <div class="form-group">
                     <label for="edit-clone-enabled">Stato:</label>
                     <div class="toggle-switch">
                         <input type="checkbox" id="edit-clone-enabled-toggle" name="enabled_toggle" checked>

@@ -24,6 +24,16 @@
                 <td><code>[pnrr_nome]</code></td>
             </tr>
             <tr>
+                <td><code>[pnrr_cup]</code></td>
+                <td>Visualizza il Codice Unico di Progetto</td>
+                <td>
+                    <code>class</code> - Classe CSS<br>
+                    <code>before</code> - Testo prima<br>
+                    <code>after</code> - Testo dopo
+                </td>
+                <td><code>[pnrr_cup class="cup-code"]</code></td>
+            </tr>
+            <tr>
                 <td><code>[pnrr_logo]</code></td>
                 <td>Visualizza il logo dell'ente</td>
                 <td>

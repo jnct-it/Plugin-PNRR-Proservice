@@ -145,6 +145,9 @@
             'logo (url)' => 'logo_url',
             'url sito' => 'home_url',
             'url' => 'home_url',
+            'cup' => 'cup',  // Assicuriamoci che il campo CUP sia mappato correttamente
+            'codice cup' => 'cup',
+            'codice unico' => 'cup',
             'indirizzo' => 'address',
             'indirizzo (testo)' => 'address',
             'contatti' => 'contacts',

@@ -242,6 +242,9 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
         'logo (url)'         => 'logo_url',
         'url sito'           => 'home_url',
         'url'                => 'home_url',
+        'cup'                => 'cup',
+        'codice cup'         => 'cup',
+        'codice unico'       => 'cup', 
         'indirizzo'          => 'address',
         'indirizzo (testo)'  => 'address',
         'contatti'           => 'contacts',
@@ -410,6 +413,7 @@ function pnrr_process_csv_import($file_path, $create_pages = false) {
                     update_post_meta($result, '_pnrr_clean_title', $clone_data['clean_title'] ?? ''); // Salva il titolo pulito
                     update_post_meta($result, '_pnrr_logo_url', $clone_data['logo_url'] ?? '');
                     update_post_meta($result, '_pnrr_home_url', $clone_data['home_url'] ?? '');
+                    update_post_meta($result, '_pnrr_cup', $clone_data['cup'] ?? ''); // Salva il campo CUP
                     update_post_meta($result, '_pnrr_address', $clone_data['address'] ?? '');
                     update_post_meta($result, '_pnrr_contacts', $clone_data['contacts'] ?? '');
                     update_post_meta($result, '_pnrr_other_info', $clone_data['other_info'] ?? '');
@@ -473,7 +477,7 @@ function pnrr_export_clones_csv() {
     $delimiter = ';';
     
     // Scrivi intestazioni con le nuove colonne
-    fputcsv($csv_handle, ['Nome', 'Logo (url)', 'Url sito', 'Indirizzo (testo)', 'Contatti (testo)', 'Altre informazioni'], $delimiter, '"');
+    fputcsv($csv_handle, ['Nome', 'Logo (url)', 'Url sito', 'CUP', 'Indirizzo (testo)', 'Contatti (testo)', 'Altre informazioni'], $delimiter, '"');
 
     // Scrivi dati
     foreach ($clones as $clone) {
@@ -487,6 +491,7 @@ function pnrr_export_clones_csv() {
             $title,
             isset($clone['logo_url']) ? $clone['logo_url'] : '',
             isset($clone['home_url']) ? $clone['home_url'] : '',
+            isset($clone['cup']) ? $clone['cup'] : '',
             isset($clone['address']) ? $clone['address'] : '',
             isset($clone['contacts']) ? $clone['contacts'] : '',
             isset($clone['other_info']) ? $clone['other_info'] : ''
@@ -515,7 +520,7 @@ function pnrr_prepare_csv_export($clone_data) {
     $output = fopen('php://temp', 'r+');
     
     // Aggiungi intestazioni
-    fputcsv($output, ['Nome', 'Logo (url)', 'Url sito', 'Indirizzo (testo)', 'Contatti (testo)', 'Altro (testo)']);
+    fputcsv($output, ['Nome', 'Logo (url)', 'Url sito', 'CUP', 'Indirizzo (testo)', 'Contatti (testo)', 'Altro (testo)']);
     
     // Aggiungi righe
     foreach ($clone_data as $clone) {
@@ -523,6 +528,7 @@ function pnrr_prepare_csv_export($clone_data) {
             isset($clone['title']) ? $clone['title'] : '',
             isset($clone['logo_url']) ? $clone['logo_url'] : '',
             isset($clone['home_url']) ? $clone['home_url'] : '',
+            isset($clone['cup']) ? $clone['cup'] : '',
             isset($clone['address']) ? $clone['address'] : '',
             isset($clone['contacts']) ? $clone['contacts'] : '',
             isset($clone['other_info']) ? $clone['other_info'] : ''

@@ -20,6 +20,7 @@ function pnrr_register_shortcodes() {
     add_shortcode('pnrr_indirizzo', 'pnrr_shortcode_indirizzo');
     add_shortcode('pnrr_contatti', 'pnrr_shortcode_contatti');
     add_shortcode('pnrr_altre', 'pnrr_shortcode_altre');
+    add_shortcode('pnrr_cup', 'pnrr_shortcode_cup');
 }
 add_action('init', 'pnrr_register_shortcodes');
 
@@ -215,6 +216,27 @@ function pnrr_shortcode_altre($atts) {
 }
 
 /**
+ * Shortcode per il CUP (Codice Unico di Progetto)
+ */
+function pnrr_shortcode_cup($atts) {
+    $atts = shortcode_atts(array(
+        'class' => 'pnrr-cup',
+        'before' => '',
+        'after' => ''
+    ), $atts, 'pnrr_cup');
+    
+    $post_id = get_the_ID();
+    $cup = get_post_meta($post_id, '_pnrr_cup', true);
+    
+    // Se siamo nella pagina master (editor), mostriamo un placeholder
+    if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($cup)) {
+        return '<span class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Codice CUP]</span>';
+    }
+    
+    return $atts['before'] . '<span class="' . esc_attr($atts['class']) . '">' . esc_html($cup) . '</span>' . $atts['after'];
+}
+
+/**
  * Elabora il contenuto Elementor e sostituisce gli shortcode con i dati specifici
  * 
  * @param string $content Il contenuto Elementor
@@ -239,6 +261,7 @@ function pnrr_process_elementor_content_shortcodes($content, $post_id, $clone_da
     // Salva gli altri dati del clone
     update_post_meta($post_id, '_pnrr_logo_url', isset($clone_data['logo_url']) ? $clone_data['logo_url'] : '');
     update_post_meta($post_id, '_pnrr_home_url', isset($clone_data['home_url']) ? $clone_data['home_url'] : '');
+    update_post_meta($post_id, '_pnrr_cup', isset($clone_data['cup']) ? $clone_data['cup'] : '');
     update_post_meta($post_id, '_pnrr_address', isset($clone_data['address']) ? $clone_data['address'] : '');
     update_post_meta($post_id, '_pnrr_contacts', isset($clone_data['contacts']) ? $clone_data['contacts'] : '');
     update_post_meta($post_id, '_pnrr_other_info', isset($clone_data['other_info']) ? $clone_data['other_info'] : '');
@@ -246,6 +269,7 @@ function pnrr_process_elementor_content_shortcodes($content, $post_id, $clone_da
     // Usa il titolo pulito per lo shortcode
     $shortcodes_map = array(
         '[pnrr_nome]' => $clean_title,
+        '[pnrr_cup]' => isset($clone_data['cup']) ? $clone_data['cup'] : '',
         '[pnrr_url raw="true"]' => isset($clone_data['home_url']) ? esc_url($clone_data['home_url']) : '',
         '[pnrr_url]' => isset($clone_data['home_url']) ? 
             '<a href="' . esc_url($clone_data['home_url']) . '" target="_blank" rel="noopener">' . esc_html($clone_data['home_url']) . '</a>' : '',

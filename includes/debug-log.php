@@ -64,8 +64,11 @@ function pnrr_debug_log($message, $level = 'info') {
     $caller = isset($backtrace[1]) ? basename($backtrace[1]['file']) . ':' . $backtrace[1]['line'] : 'unknown';
     $prefix .= '[' . $caller . '] ';
     
+    // Aggiungi un ritorno a capo extra per migliorare la leggibilità nei log
+    $log_message = $prefix . $message . PHP_EOL;
+    
     // Scrivi nel log
-    return error_log($prefix . $message . PHP_EOL, 3, $log_file);
+    return error_log($log_message, 3, $log_file);
 }
 
 /**

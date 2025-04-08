@@ -376,7 +376,9 @@ class PNRR_Admin {
         $file->seek($start_line);
         
         while (!$file->eof()) {
-            $log_content .= htmlentities($file->fgets());
+            // Aggiungi stile HTML per migliorare la leggibilità
+            $line = $file->fgets();
+            $log_content .= htmlentities($line) . '<br>';  // Aggiungo il tag <br> per forzare i ritorni a capo
         }
         
         return $log_content;

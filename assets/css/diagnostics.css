@@ -20,21 +20,24 @@
     font-family: monospace;
     font-size: 12px;
     line-height: 1.5;
+    white-space: normal;    /* Modificato da pre-wrap a normal */
+    word-break: break-all;  /* Aggiunto per gestire meglio le righe lunghe */
 }
 
-.log-entries .info {
+/* Stile per i diversi livelli di log */
+.log-entries .info-log {
     color: #0073aa;
 }
 
-.log-entries .warning {
+.log-entries .warning-log {
     color: #ffb900;
 }
 
-.log-entries .error {
+.log-entries .error-log {
     color: #dc3232;
 }
 
-.log-entries .debug {
+.log-entries .debug-log {
     color: #666;
 }
 

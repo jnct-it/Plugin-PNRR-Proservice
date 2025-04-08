@@ -64,7 +64,7 @@ class PNRR_Admin_Display {
      */
     public function render_clones_table($clones, $show_deleted = false) {
         if (empty($clones)) {
-            echo '<tr><td colspan="7" class="no-items">Nessun dato clone disponibile.</td></tr>';
+            echo '<tr><td colspan="8" class="no-items">Nessun dato clone disponibile.</td></tr>';
             return;
         }
         
@@ -89,6 +89,7 @@ class PNRR_Admin_Display {
             <tr data-id="<?php echo esc_attr($index); ?>" class="<?php echo esc_attr($row_class); ?>"
                 data-address="<?php echo esc_attr(isset($clone['address']) ? $clone['address'] : ''); ?>"
                 data-contacts="<?php echo esc_attr(isset($clone['contacts']) ? $clone['contacts'] : ''); ?>"
+                data-cup="<?php echo esc_attr(isset($clone['cup']) ? $clone['cup'] : ''); ?>"
                 data-other-info="<?php echo esc_attr(isset($clone['other_info']) ? $clone['other_info'] : ''); ?>">
                 <td><?php echo esc_html($clone['slug']); ?></td>
                 <td>
@@ -102,6 +103,13 @@ class PNRR_Admin_Display {
                 <td>
                     <?php if (!empty($clone['home_url'])) : ?>
                     <a href="<?php echo esc_url($clone['home_url']); ?>" target="_blank"><?php echo esc_html($clone['home_url']); ?></a>
+                    <?php else : ?>
+                    <span class="not-set">-</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if (!empty($clone['cup'])) : ?>
+                        <?php echo esc_html($clone['cup']); ?>
                     <?php else : ?>
                     <span class="not-set">-</span>
                     <?php endif; ?>

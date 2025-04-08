@@ -353,12 +353,13 @@ Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1
                     </div>
                 </div>
                 
-                <table id="pnrr-clones-table" class="widefat striped">
+                <table id="pnrr-clones-table" class="widefat">
                     <thead>
                         <tr>
                             <th class="sortable" data-sort="slug">Slug</th>
                             <th class="sortable" data-sort="title">Titolo</th>
                             <th class="sortable" data-sort="home_url">URL Sito</th>
+                            <th class="sortable" data-sort="cup">Codice CUP</th>
                             <th class="sortable" data-sort="logo_url">Logo</th>
                             <th>Indirizzo</th>
                             <th>Stato</th>
@@ -366,7 +367,28 @@ Comune di Milano,https://esempio.it/logo2.png,https://comune2.it,"Piazza Duomo 1
                         </tr>
                     </thead>
                     <tbody>
-                        <?php $this->render_clones_table($clone_manager->get_clone_data(false, isset($_COOKIE['pnrr_show_deleted_clones']) && $_COOKIE['pnrr_show_deleted_clones'] === 'true')); ?>
+                        <?php 
+                        $show_deleted = isset($_COOKIE['pnrr_show_deleted_clones']) && $_COOKIE['pnrr_show_deleted_clones'] === 'true';
+                        // Ottieni l'oggetto display dalla variabile globale
+                        global $pnrr_plugin;
+                        if (isset($pnrr_plugin['admin']) && is_object($pnrr_plugin['admin'])) {
+                            $display_handler = $pnrr_plugin['admin']->get_display_handler();
+                            if ($display_handler) {
+                                // Il problema è qui: stiamo usando l'oggetto sbagliato
+                                // Utilizza clone_manager invece di core per ottenere i cloni
+                                if (isset($pnrr_plugin['clone_manager']) && is_object($pnrr_plugin['clone_manager'])) {
+                                    $clones = $pnrr_plugin['clone_manager']->get_all_clones();
+                                    $display_handler->render_clones_table($clones, $show_deleted); 
+                                } else {
+                                    echo '<tr><td colspan="8" class="no-items">Errore: Gestore cloni non disponibile.</td></tr>';
+                                }
+                            } else {
+                                echo '<tr><td colspan="8" class="no-items">Errore: Display handler non trovato.</td></tr>';
+                            }
+                        } else {
+                            echo '<tr><td colspan="8" class="no-items">Errore: Istanza admin non trovata.</td></tr>';
+                        }
+                        ?>
                     </tbody>
                 </table>
                 
