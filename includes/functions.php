@@ -134,35 +134,6 @@ function pnrr_update_option($key, $value) {
 }
 
 /**
- * Log di debug che funziona anche senza WP_DEBUG
- * 
- * @param string $message Messaggio da loggare
- * @param string $level Livello di log (info, warning, error)
- */
-function pnrr_debug_log($message, $level = 'info') {
-    // Crea directory dei log se non esiste
-    $upload_dir = wp_upload_dir();
-    $log_dir = $upload_dir['basedir'] . '/pnrr-logs';
-    if (!file_exists($log_dir)) {
-        wp_mkdir_p($log_dir);
-    }
-    
-    // Nome file di log basato sulla data
-    $log_file = $log_dir . '/pnrr-debug-' . date('Y-m-d') . '.log';
-    
-    // Prefisso con data, ora e livello
-    $prefix = '[' . date('Y-m-d H:i:s') . '] [' . strtoupper($level) . '] ';
-    
-    // Formatta il messaggio
-    if (is_array($message) || is_object($message)) {
-        $message = print_r($message, true);
-    }
-    
-    // Scrivi nel log
-    error_log($prefix . $message . PHP_EOL, 3, $log_file);
-}
-
-/**
  * Crea le directory necessarie al plugin
  */
 function pnrr_create_required_directories() {
