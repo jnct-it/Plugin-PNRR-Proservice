@@ -117,7 +117,7 @@ function pnrr_shortcode_url($atts) {
         'text' => 'Visita il sito',
         'class' => 'pnrr-url-link',
         'target' => '_blank',
-        'raw' => false  // Nuovo attributo per restituire solo l'URL raw
+        'raw' => 'false'  // Modificato per accettare stringhe per compatibilità
     ), $atts, 'pnrr_url');
     
     $post_id = get_the_ID();
@@ -125,16 +125,21 @@ function pnrr_shortcode_url($atts) {
     
     // Se siamo nella pagina master (editor), mostriamo un placeholder
     if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($url)) {
+        // Se raw è true, restituisci solo "#" come placeholder
+        if ($atts['raw'] === 'true') {
+            return '#';
+        }
         return '<a href="#" class="' . esc_attr($atts['class']) . ' pnrr-placeholder">' . esc_html($atts['text']) . '</a>';
     }
     
-    // Se è richiesto l'URL raw, restituiscilo senza formattazione
-    if (filter_var($atts['raw'], FILTER_VALIDATE_BOOLEAN)) {
+    // Se raw è true, restituisci solo l'URL senza formattazione
+    if ($atts['raw'] === 'true') {
         return esc_url($url);
     }
     
     return '<a href="' . esc_url($url) . '" class="' . esc_attr($atts['class']) . '" target="' . esc_attr($atts['target']) . '" rel="noopener">' . esc_html($atts['text']) . '</a>';
 }
+
 
 /**
  * Shortcode per l'indirizzo
