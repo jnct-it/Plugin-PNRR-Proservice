@@ -91,7 +91,20 @@ class PNRR_Admin_Display {
                 data-contacts="<?php echo esc_attr(isset($clone['contacts']) ? $clone['contacts'] : ''); ?>"
                 data-cup="<?php echo esc_attr(isset($clone['cup']) ? $clone['cup'] : ''); ?>"
                 data-other-info="<?php echo esc_attr(isset($clone['other_info']) ? $clone['other_info'] : ''); ?>">
-                <td><?php echo esc_html($clone['slug']); ?></td>
+                <td>
+                    <?php 
+                    // Rendi lo slug cliccabile
+                    if (!empty($clone['page_id'])) {
+                        // Se abbiamo l'ID della pagina, usa get_permalink per ottenere l'URL
+                        $page_url = get_permalink($clone['page_id']);
+                        echo '<a href="' . esc_url($page_url) . '" target="_blank">' . esc_html($clone['slug']) . '</a>';
+                    } else {
+                        // Se non abbiamo l'ID, usa lo slug per costruire l'URL
+                        $page_url = home_url('/' . $clone['slug'] . '/');
+                        echo '<a href="' . esc_url($page_url) . '" target="_blank">' . esc_html($clone['slug']) . '</a>';
+                    }
+                    ?>
+                </td>
                 <td>
                     <?php 
                     echo esc_html($display_title); 

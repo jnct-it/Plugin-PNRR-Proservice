@@ -117,7 +117,7 @@ function pnrr_shortcode_url($atts) {
         'text' => 'Visita il sito',
         'class' => 'pnrr-url-link',
         'target' => '_blank',
-        'raw' => 'false'  // Modificato per accettare stringhe per compatibilità
+        'raw' => false  // Nuovo attributo per restituire solo l'URL raw
     ), $atts, 'pnrr_url');
     
     $post_id = get_the_ID();
@@ -125,21 +125,16 @@ function pnrr_shortcode_url($atts) {
     
     // Se siamo nella pagina master (editor), mostriamo un placeholder
     if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($url)) {
-        // Se raw è true, restituisci solo "#" come placeholder
-        if ($atts['raw'] === 'true') {
-            return '#';
-        }
         return '<a href="#" class="' . esc_attr($atts['class']) . ' pnrr-placeholder">' . esc_html($atts['text']) . '</a>';
     }
     
-    // Se raw è true, restituisci solo l'URL senza formattazione
-    if ($atts['raw'] === 'true') {
+    // Se è richiesto l'URL raw, restituiscilo senza formattazione
+    if (filter_var($atts['raw'], FILTER_VALIDATE_BOOLEAN)) {
         return esc_url($url);
     }
     
     return '<a href="' . esc_url($url) . '" class="' . esc_attr($atts['class']) . '" target="' . esc_attr($atts['target']) . '" rel="noopener">' . esc_html($atts['text']) . '</a>';
 }
-
 
 /**
  * Shortcode per l'indirizzo
@@ -152,14 +147,14 @@ function pnrr_shortcode_indirizzo($atts) {
     $post_id = get_the_ID();
     $indirizzo = get_post_meta($post_id, '_pnrr_address', true);
     
-    // Assicurati che il contenuto del meta non sia vuoto
-    if (empty($indirizzo)) {
-        $indirizzo = get_post_meta($post_id, '_pnrr_address', true);
+    // Se siamo nella pagina master (editor), mostriamo un placeholder
+    if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
+        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Indirizzo dell\'ente]</div>';
     }
     
-    // Se siamo nella pagina master (editor) o non c'è indirizzo, mostriamo un placeholder
-    if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($indirizzo)) {
-        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Indirizzo dell\'ente]</div>';
+    // Se il campo è vuoto, non mostrare nulla
+    if (empty($indirizzo)) {
+        return '';
     }
     
     // Importante: utilizzare wpautop per preservare i ritorni a capo
@@ -177,14 +172,14 @@ function pnrr_shortcode_contatti($atts) {
     $post_id = get_the_ID();
     $contatti = get_post_meta($post_id, '_pnrr_contacts', true);
     
-    // Assicurati che il contenuto del meta non sia vuoto
-    if (empty($contatti)) {
-        $contatti = get_post_meta($post_id, '_pnrr_contacts', true);
+    // Se siamo nella pagina master (editor), mostriamo un placeholder
+    if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
+        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Contatti dell\'ente]</div>';
     }
     
-    // Se siamo nella pagina master (editor), mostriamo un placeholder
-    if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($contatti)) {
-        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Contatti dell\'ente]</div>';
+    // Se il campo è vuoto, non mostrare nulla
+    if (empty($contatti)) {
+        return '';
     }
     
     // Formatta automaticamente email e numeri di telefono come link
@@ -206,14 +201,14 @@ function pnrr_shortcode_altre($atts) {
     $post_id = get_the_ID();
     $altre = get_post_meta($post_id, '_pnrr_other_info', true);
     
-    // Assicurati che il contenuto del meta non sia vuoto
-    if (empty($altre)) {
-        $altre = get_post_meta($post_id, '_pnrr_other_info', true);
+    // Se siamo nella pagina master (editor), mostriamo un placeholder
+    if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
+        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Altre informazioni]</div>';
     }
     
-    // Se siamo nella pagina master (editor), mostriamo un placeholder
-    if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($altre)) {
-        return '<div class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Altre informazioni]</div>';
+    // Se il campo è vuoto, non mostrare nulla
+    if (empty($altre)) {
+        return '';
     }
     
     // Importante: utilizzare wpautop per preservare i ritorni a capo
@@ -234,154 +229,16 @@ function pnrr_shortcode_cup($atts) {
     $cup = get_post_meta($post_id, '_pnrr_cup', true);
     
     // Se siamo nella pagina master (editor), mostriamo un placeholder
-    if (isset($_GET['action']) && $_GET['action'] === 'elementor' || empty($cup)) {
+    if (isset($_GET['action']) && $_GET['action'] === 'elementor') {
         return '<span class="' . esc_attr($atts['class']) . ' pnrr-placeholder">[Codice CUP]</span>';
+    }
+    
+    // Se il campo è vuoto, non mostrare nulla
+    if (empty($cup)) {
+        return '';
     }
     
     return $atts['before'] . '<span class="' . esc_attr($atts['class']) . '">' . esc_html($cup) . '</span>' . $atts['after'];
 }
 
-/**
- * Elabora il contenuto Elementor e sostituisce gli shortcode con i dati specifici
- * 
- * @param string $content Il contenuto Elementor
- * @param int $post_id ID della pagina clone
- * @param array $clone_data Dati del clone
- * @return string Contenuto elaborato
- */
-function pnrr_process_elementor_content_shortcodes($content, $post_id, $clone_data) {
-    // Estrai il titolo e crea una versione pulita
-    $title = isset($clone_data['title']) ? $clone_data['title'] : '';
-    $clean_title = $title;
-    
-    // Rimuovi il prefisso "PNRR - " se presente
-    if (substr($title, 0, 7) === 'PNRR - ') {
-        $clean_title = substr($title, 7);
-    }
-    
-    // Salva sia il titolo originale che quello pulito
-    update_post_meta($post_id, '_pnrr_title', $title);
-    update_post_meta($post_id, '_pnrr_clean_title', $clean_title);
-    
-    // Salva gli altri dati del clone
-    update_post_meta($post_id, '_pnrr_logo_url', isset($clone_data['logo_url']) ? $clone_data['logo_url'] : '');
-    update_post_meta($post_id, '_pnrr_home_url', isset($clone_data['home_url']) ? $clone_data['home_url'] : '');
-    update_post_meta($post_id, '_pnrr_cup', isset($clone_data['cup']) ? $clone_data['cup'] : '');
-    update_post_meta($post_id, '_pnrr_address', isset($clone_data['address']) ? $clone_data['address'] : '');
-    update_post_meta($post_id, '_pnrr_contacts', isset($clone_data['contacts']) ? $clone_data['contacts'] : '');
-    update_post_meta($post_id, '_pnrr_other_info', isset($clone_data['other_info']) ? $clone_data['other_info'] : '');
-    
-    // Usa il titolo pulito per lo shortcode
-    $shortcodes_map = array(
-        '[pnrr_nome]' => $clean_title,
-        '[pnrr_cup]' => isset($clone_data['cup']) ? $clone_data['cup'] : '',
-        '[pnrr_url raw="true"]' => isset($clone_data['home_url']) ? esc_url($clone_data['home_url']) : '',
-        '[pnrr_url]' => isset($clone_data['home_url']) ? 
-            '<a href="' . esc_url($clone_data['home_url']) . '" target="_blank" rel="noopener">' . esc_html($clone_data['home_url']) . '</a>' : '',
-        '[pnrr_indirizzo]' => isset($clone_data['address']) && !empty($clone_data['address']) ? 
-            '<div class="pnrr-indirizzo">' . wpautop(wp_kses_post($clone_data['address'])) . '</div>' : '',
-        '[pnrr_contatti]' => isset($clone_data['contacts']) && !empty($clone_data['contacts']) ? 
-            '<div class="pnrr-contatti">' . wpautop(wp_kses_post($clone_data['contacts'])) . '</div>' : '',
-        '[pnrr_altre]' => isset($clone_data['other_info']) && !empty($clone_data['other_info']) ? 
-            '<div class="pnrr-altre-info">' . wpautop(wp_kses_post($clone_data['other_info'])) . '</div>' : '',
-    );
-    
-    // Gestione speciale per il logo (con link)
-    $logo_pattern = '/\[pnrr_logo([^\]]*)\]/';
-    if (preg_match_all($logo_pattern, $content, $matches)) {
-        foreach ($matches[0] as $index => $full_match) {
-            $atts_string = $matches[1][$index];
-            $atts = shortcode_parse_atts($atts_string);
-            
-            $logo_html = '';
-            if (!empty($clone_data['logo_url'])) {
-                $width = isset($atts['width']) ? 'width="' . esc_attr($atts['width']) . '"' : '';
-                $height = isset($atts['height']) ? 'height="' . esc_attr($atts['height']) . '"' : '';
-                $class = isset($atts['class']) ? 'class="' . esc_attr($atts['class']) . '"' : 'class="pnrr-logo"';
-                $alt = isset($atts['alt']) ? 'alt="' . esc_attr($atts['alt']) . '"' : 'alt="Logo"';
-                
-                // Crea il tag HTML per l'immagine
-                $img_html = '<img src="' . esc_url($clone_data['logo_url']) . '" ' . $width . ' ' . $height . ' ' . $class . ' ' . $alt . '>';
-                
-                // Se c'è un URL home e l'attributo link non è esplicitamente impostato su false, aggiungi il link
-                $link = isset($atts['link']) ? $atts['link'] : 'true';
-                if (!empty($clone_data['home_url']) && $link !== 'false') {
-                    $logo_html = '<a href="' . esc_url($clone_data['home_url']) . '" target="_blank" rel="noopener">' . $img_html . '</a>';
-                } else {
-                    $logo_html = $img_html;
-                }
-            }
-            
-            $content = str_replace($full_match, $logo_html, $content);
-        }
-    }
-    
-    // Sostituisci gli altri shortcode, assicurandoci che i tag HTML siano preservati
-    foreach ($shortcodes_map as $shortcode => $value) {
-        $content = str_replace($shortcode, $value, $content);
-    }
-    
-    return $content;
-}
-
-/**
- * Registra gli shortcode personalizzati per essere utilizzati nei widget HTML Elementor
- */
-function pnrr_register_elementor_shortcodes() {
-    if (defined('ELEMENTOR_VERSION')) {
-        add_filter('elementor/widget/render_content', 'pnrr_process_shortcodes_in_elementor', 10, 2);
-    }
-}
-add_action('init', 'pnrr_register_elementor_shortcodes');
-
-/**
- * Elabora gli shortcode nei widget HTML di Elementor
- *
- * @param string $content Il contenuto del widget
- * @param \Elementor\Widget_Base $widget L'oggetto widget
- * @return string Contenuto elaborato
- */
-function pnrr_process_shortcodes_in_elementor($content, $widget) {
-    if ($widget->get_name() === 'html' || $widget->get_name() === 'text-editor') {
-        $content = do_shortcode($content);
-    }
-    return $content;
-}
-
-/**
- * Aggiungi stili CSS per i placeholder degli shortcode in Elementor
- */
-function pnrr_add_shortcode_styles() {
-    // Aggiungi stili solo nell'editor di Elementor
-    if (!isset($_GET['action']) || $_GET['action'] !== 'elementor') {
-        return;
-    }
-    
-    echo '<style>
-        .pnrr-placeholder {
-            background-color: #f7f7f7;
-            border: 1px dashed #ccc;
-            padding: 5px 10px;
-            display: inline-block;
-            color: #666;
-            font-style: italic;
-        }
-        .elementor-editor-active [class*="pnrr-"] {
-            position: relative;
-        }
-        .elementor-editor-active [class*="pnrr-"]::before {
-            content: "PNRR Shortcode";
-            position: absolute;
-            top: -20px;
-            left: 0;
-            background: #6d7882;
-            color: #fff;
-            padding: 2px 6px;
-            font-size: 10px;
-            border-radius: 3px;
-            z-index: 999;
-        }
-    </style>';
-}
-add_action('wp_head', 'pnrr_add_shortcode_styles');
-add_action('admin_head', 'pnrr_add_shortcode_styles');
+// ... resto del codice ...

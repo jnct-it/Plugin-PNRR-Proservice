@@ -339,6 +339,7 @@ class PNRR_Admin_Ajax {
             'clean_title' => $clean_title, // Salva la versione pulita
             'home_url' => esc_url_raw($clone_data['home_url']),
             'logo_url' => esc_url_raw($clone_data['logo_url']),
+            'cup' => sanitize_text_field($clone_data['cup']), // Aggiungiamo il campo CUP qui
             'address' => wp_kses_post($clone_data['address']),
             'contacts' => wp_kses_post($clone_data['contacts']),
             'other_info' => wp_kses_post($clone_data['other_info']),
@@ -359,6 +360,7 @@ class PNRR_Admin_Ajax {
             update_post_meta($page_id, '_pnrr_clean_title', $update_data['clean_title']); // Salva il titolo pulito
             update_post_meta($page_id, '_pnrr_logo_url', $update_data['logo_url']);
             update_post_meta($page_id, '_pnrr_home_url', $update_data['home_url']);
+            update_post_meta($page_id, '_pnrr_cup', $update_data['cup']); // Aggiungiamo il salvataggio del campo CUP qui
             update_post_meta($page_id, '_pnrr_address', $update_data['address']);
             update_post_meta($page_id, '_pnrr_contacts', $update_data['contacts']);
             update_post_meta($page_id, '_pnrr_other_info', $update_data['other_info']);

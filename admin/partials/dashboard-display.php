@@ -440,6 +440,12 @@ if (!empty($sync_results) && isset($sync_results['discovered']) && $sync_results
                     </div>
                     
                     <div class="form-group">
+                        <label for="edit-clone-cup">Codice CUP:</label>
+                        <input type="text" id="edit-clone-cup" name="cup">
+                        <p class="description">Inserisci il Codice Unico di Progetto (CUP).</p>
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="edit-clone-logo-url">URL Logo:</label>
                         <div class="logo-selector">
                             <input type="url" id="edit-clone-logo-url" name="logo_url">

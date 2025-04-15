@@ -6,18 +6,21 @@ function initMediaSelector($) {
     
     let mediaUploader = null;
     
+    // Media frame per la selezione del logo
+    var logoMediaFrame;
+    
     // Inizializzazione del selettore media
     $('#select-logo-button').on('click', function(e) {
         e.preventDefault();
         
         // Se l'uploader esiste già, apri direttamente
-        if (mediaUploader) {
-            mediaUploader.open();
+        if (logoMediaFrame) {
+            logoMediaFrame.open();
             return;
         }
         
         // Crea il media uploader
-        mediaUploader = wp.media({
+        logoMediaFrame = wp.media({
             title: 'Seleziona o carica un logo',
             button: {
                 text: 'Usa questa immagine'
@@ -26,8 +29,8 @@ function initMediaSelector($) {
         });
         
         // Quando un'immagine viene selezionata
-        mediaUploader.on('select', function() {
-            const attachment = mediaUploader.state().get('selection').first().toJSON();
+        logoMediaFrame.on('select', function() {
+            const attachment = logoMediaFrame.state().get('selection').first().toJSON();
             $('#edit-clone-logo-url').val(attachment.url);
             
             // Mostra anteprima
@@ -37,7 +40,7 @@ function initMediaSelector($) {
             $('#remove-logo-button').show();
         });
         
-        mediaUploader.open();
+        logoMediaFrame.open();
     });
     
     // Rimozione del logo
